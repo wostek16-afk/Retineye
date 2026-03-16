@@ -1,0 +1,71 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+:root {
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-top: env(safe-area-inset-top, 0px);
+}
+
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+}
+
+::-webkit-scrollbar { display: none; }
+* { scrollbar-width: none; }
+
+input::placeholder { color: #636366; }
+button { -webkit-tap-highlight-color: transparent; cursor: pointer; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes screenIn {
+  from { opacity: 0; transform: translateY(12px) scale(0.99); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+
+@keyframes slideUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes notifDrop {
+  from { opacity: 0; transform: translateY(-24px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes tabBounce {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(0.78); }
+  65%  { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+
+@keyframes ringFill {
+  from { stroke-dashoffset: var(--circ); }
+  to   { stroke-dashoffset: var(--offset); }
+}
+
+.screen-in  { animation: screenIn  .32s cubic-bezier(.25,.46,.45,.94) both; }
+.fade-up    { animation: fadeUp    .38s cubic-bezier(.25,.46,.45,.94) both; }
+.fade-up-1  { animation: fadeUp    .38s .07s cubic-bezier(.25,.46,.45,.94) both; }
+.fade-up-2  { animation: fadeUp    .38s .14s cubic-bezier(.25,.46,.45,.94) both; }
+.fade-up-3  { animation: fadeUp    .38s .22s cubic-bezier(.25,.46,.45,.94) both; }
+.notif-in   { animation: notifDrop .35s cubic-bezier(.25,.46,.45,.94) both; }
