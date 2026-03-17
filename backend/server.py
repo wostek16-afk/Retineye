@@ -111,6 +111,13 @@ def load_model():
             except Exception:
                 continue
 
+        # Diagnostic : affiche les 20 premières clés pour identifier l'archi
+        keys = list(state_dict.keys())
+        print(f"❓ Architecture inconnue — premières clés du state dict :")
+        for k in keys[:20]:
+            print(f"   {k}")
+        print(f"   ... ({len(keys)} clés au total)")
+
         # Dernier recours : strict=False sur resnet50
         candidate = _make_resnet(models.resnet50, NUM_CLASSES)
         missing, unexpected = candidate.load_state_dict(state_dict, strict=False)
@@ -129,6 +136,29 @@ class AnalyzeRequest(BaseModel):
 @app.get("/health")
 def health():
     return {"status": "ok", "model_loaded": model is not None, "device": str(device)}
+
+
+@app.get("/debug/keys")
+def debug_keys():
+    """Retourne les clés du state dict pour identifier l'architecture."""
+    if not os.path.exists(MODEL_PATH):
+        raise HTTPException(status_code=404, detail="Fichier modèle introuvable")
+    checkpoint = torch.load(MODEL_PATH, map_location="cpu", weights_only=False)
+    if not isinstance(checkpoint, dict):
+        return {"type": type(checkpoint).__name__, "keys": []}
+    state_dict = (
+        checkpoint.get("model_state_dict")
+        or checkpoint.get("state_dict")
+        or checkpoint.get("model")
+        or checkpoint
+    )
+    keys = list(state_dict.keys())
+    return {
+        "total_keys": len(keys),
+        "first_20": keys[:20],
+        "last_5": keys[-5:],
+        "checkpoint_top_keys": list(checkpoint.keys()) if isinstance(checkpoint, dict) else [],
+    }
 
 
 @app.post("/analyze")
