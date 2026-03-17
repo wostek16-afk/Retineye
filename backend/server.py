@@ -195,11 +195,20 @@ def analyze(req: AnalyzeRequest):
 
         with torch.no_grad():
             outputs = model(tensor)
-            probs = F.softmax(outputs, dim=1)[0]
 
-        icdr_level = int(probs.argmax().item())
-        confidence = int(probs[icdr_level].item() * 100)
-        confidence = max(50, min(99, confidence))
+        # Régression (sortie scalaire) ou classification (5 logits)
+        if outputs.shape[-1] == 1:
+            raw = outputs.squeeze().item()          # score continu ~0-4
+            raw = max(0.0, min(4.0, raw))
+            icdr_level = round(raw)
+            # Confiance : plus on est proche d'un entier, plus c'est sûr
+            confidence = int(100 - abs(raw - icdr_level) * 40)
+            confidence = max(50, min(99, confidence))
+        else:
+            probs = F.softmax(outputs, dim=1)[0]
+            icdr_level = int(probs.argmax().item())
+            confidence = int(probs[icdr_level].item() * 100)
+            confidence = max(50, min(99, confidence)))
 
         return {
             "icdr_level": icdr_level,
