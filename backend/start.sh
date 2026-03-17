@@ -48,7 +48,10 @@ if [ "$NUMPY_OK" != "ok" ]; then
 fi
 
 # Installe les dépendances si besoin
-if ! python -c "import torch" 2>/dev/null; then
+MISSING=0
+python -c "import torch" 2>/dev/null || MISSING=1
+python -c "import timm" 2>/dev/null || MISSING=1
+if [ "$MISSING" = "1" ]; then
   echo "⚙️  Installation des dépendances (peut prendre quelques minutes)..."
   pip install --upgrade pip -q
   pip install -r "$SCRIPT_DIR/requirements.txt" -q
