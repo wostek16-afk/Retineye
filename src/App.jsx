@@ -198,7 +198,7 @@ function TabBar({tab,set}){
         padding:"0 14px",
         paddingBottom:"calc(env(safe-area-inset-bottom, 0px) + 10px)",
       }}>
-        {/* iOS 18 Liquid Glass pill */}
+        {/* iOS 26 Liquid Glass pill */}
         <div ref={pillRef} style={{
           background: t.isDark ? "rgba(22,22,26,0.42)" : "rgba(255,255,255,0.52)",
           backdropFilter:"blur(64px) saturate(240%) brightness(1.12)",

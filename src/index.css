@@ -70,7 +70,7 @@ button { -webkit-tap-highlight-color: transparent; cursor: pointer; }
 .fade-up-3  { animation: fadeUp    .38s .22s cubic-bezier(.25,.46,.45,.94) both; }
 .notif-in   { animation: notifDrop .35s cubic-bezier(.25,.46,.45,.94) both; }
 
-/* ── iOS 18 Liquid Glass bubble ───────────────────────────── */
+/* ── iOS 26 Liquid Glass bubble ───────────────────────────── */
 .liquid-bubble {
   position: absolute;
   width: 72px;
