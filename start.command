@@ -9,10 +9,10 @@ echo "=== Lancement de Retineye ==="
 cd backend
 if [ ! -d "venv" ]; then
   echo "Installation des dépendances (1ère fois seulement)..."
-  python3 -m venv venv
+  python3.12 -m venv venv
   source venv/bin/activate
   pip install fastapi uvicorn pillow pydantic numpy timm
-  pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+  pip install torch torchvision
 else
   source venv/bin/activate
 fi
