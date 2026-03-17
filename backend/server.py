@@ -2,7 +2,7 @@
 Retineye — Backend IA pour l'analyse de fond d'œil
 Lance avec : uvicorn server:app --host 0.0.0.0 --port 8000
 
-Placer best_model_v2.pth dans ce dossier (même répertoire que server.py).
+Placer ia.pth dans ce dossier (même répertoire que server.py).
 """
 
 import os
@@ -25,7 +25,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-MODEL_PATH = os.path.join(os.path.dirname(__file__), "best_model_v2.pth")
+MODEL_PATH = os.path.join(os.path.dirname(__file__), "ia.pth")
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = None
 
@@ -57,7 +57,7 @@ ICDR_FINDINGS = [
 def load_model():
     global model
     if not os.path.exists(MODEL_PATH):
-        print(f"⚠️  best_model_v2.pth introuvable dans {MODEL_PATH}")
+        print(f"⚠️  ia.pth introuvable dans {MODEL_PATH}")
         return
     try:
         model = torch.load(MODEL_PATH, map_location=device, weights_only=False)
@@ -80,7 +80,7 @@ def health():
 @app.post("/analyze")
 def analyze(req: AnalyzeRequest):
     if model is None:
-        raise HTTPException(status_code=503, detail="Modèle non chargé — placer best_model_v2.pth dans le dossier backend/")
+        raise HTTPException(status_code=503, detail="Modèle non chargé — placer ia.pth dans le dossier backend/")
 
     try:
         img_bytes = base64.b64decode(req.image)
