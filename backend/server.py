@@ -9,8 +9,9 @@ import os
 import io
 import base64
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
-from torchvision import transforms
+from torchvision import transforms, models
 from PIL import Image
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -53,6 +54,27 @@ ICDR_FINDINGS = [
 ]
 
 
+NUM_CLASSES = 5
+
+ARCHITECTURES = [
+    ("resnet50",  lambda: _make_resnet(models.resnet50,  NUM_CLASSES)),
+    ("resnet34",  lambda: _make_resnet(models.resnet34,  NUM_CLASSES)),
+    ("resnet18",  lambda: _make_resnet(models.resnet18,  NUM_CLASSES)),
+    ("efficientnet_b0", lambda: _make_efficientnet("efficientnet_b0", NUM_CLASSES)),
+    ("efficientnet_b3", lambda: _make_efficientnet("efficientnet_b3", NUM_CLASSES)),
+]
+
+def _make_resnet(fn, n):
+    m = fn(weights=None)
+    m.fc = nn.Linear(m.fc.in_features, n)
+    return m
+
+def _make_efficientnet(name, n):
+    m = getattr(models, name)(weights=None)
+    m.classifier[1] = nn.Linear(m.classifier[1].in_features, n)
+    return m
+
+
 @app.on_event("startup")
 def load_model():
     global model
@@ -60,10 +82,42 @@ def load_model():
         print(f"⚠️  best_model_v2.pth introuvable dans {MODEL_PATH}")
         return
     try:
-        model = torch.load(MODEL_PATH, map_location=device, weights_only=False)
-        model.to(device)
+        checkpoint = torch.load(MODEL_PATH, map_location=device, weights_only=False)
+
+        # Cas 1 : modèle complet (pas un dict)
+        if not isinstance(checkpoint, dict):
+            model = checkpoint.to(device)
+            model.eval()
+            print(f"✅ Modèle complet chargé sur {device}")
+            return
+
+        # Cas 2 : state dict direct ou dans une clé
+        state_dict = (
+            checkpoint.get("model_state_dict")
+            or checkpoint.get("state_dict")
+            or checkpoint.get("model")
+            or checkpoint  # le dict lui-même est le state dict
+        )
+
+        # Essaie chaque architecture
+        for arch_name, arch_fn in ARCHITECTURES:
+            try:
+                candidate = arch_fn()
+                candidate.load_state_dict(state_dict, strict=True)
+                model = candidate.to(device)
+                model.eval()
+                print(f"✅ Modèle chargé ({arch_name}) sur {device}")
+                return
+            except Exception:
+                continue
+
+        # Dernier recours : strict=False sur resnet50
+        candidate = _make_resnet(models.resnet50, NUM_CLASSES)
+        missing, unexpected = candidate.load_state_dict(state_dict, strict=False)
+        model = candidate.to(device)
         model.eval()
-        print(f"✅ Modèle chargé depuis {MODEL_PATH} sur {device}")
+        print(f"⚠️  Modèle chargé (strict=False) — manquants: {len(missing)}, inattendus: {len(unexpected)}")
+
     except Exception as e:
         print(f"❌ Erreur chargement modèle : {e}")
 
