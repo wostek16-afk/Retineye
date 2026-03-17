@@ -175,29 +175,30 @@ function TabBar({tab,set}){
     <div style={{
       position:"fixed",bottom:0,left:0,right:0,zIndex:999,
       display:"flex",justifyContent:"center",
-      // This gradient makes content appear to dissolve into the glass bar
       background: t.isDark
-        ? "linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.55) 55%, transparent 100%)"
-        : "linear-gradient(to top, rgba(242,242,247,0.96) 0%, rgba(242,242,247,0.6) 55%, transparent 100%)",
-      paddingTop:28,
+        ? "linear-gradient(to top, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.28) 60%, transparent 100%)"
+        : "linear-gradient(to top, rgba(242,242,247,0.78) 0%, rgba(242,242,247,0.32) 60%, transparent 100%)",
+      paddingTop:36,
     }}>
       <div style={{
         width:"100%",maxWidth:430,
         padding:"0 14px",
         paddingBottom:"calc(env(safe-area-inset-bottom, 0px) + 10px)",
       }}>
-        {/* The actual glass pill */}
+        {/* iOS 18 Liquid Glass pill */}
         <div style={{
-          background: t.isDark ? "rgba(18,18,20,0.80)" : "rgba(250,250,252,0.84)",
-          backdropFilter:"blur(40px) saturate(200%) brightness(1.08)",
-          WebkitBackdropFilter:"blur(40px) saturate(200%) brightness(1.08)",
+          background: t.isDark ? "rgba(22,22,26,0.42)" : "rgba(255,255,255,0.52)",
+          backdropFilter:"blur(64px) saturate(240%) brightness(1.12)",
+          WebkitBackdropFilter:"blur(64px) saturate(240%) brightness(1.12)",
           borderRadius:26,
-          border:`1px solid ${t.isDark?"rgba(255,255,255,0.11)":"rgba(0,0,0,0.09)"}`,
+          border: t.isDark
+            ? "1px solid rgba(255,255,255,0.14)"
+            : "1px solid rgba(255,255,255,0.72)",
           display:"flex",alignItems:"center",
           padding:"8px 6px 9px",
           boxShadow: t.isDark
-            ? "0 -1px 0 rgba(255,255,255,0.04), 0 14px 44px rgba(0,0,0,0.75), inset 0 1px 0 rgba(255,255,255,0.07)"
-            : "0 -1px 0 rgba(0,0,0,0.04), 0 8px 32px rgba(0,0,0,0.14), inset 0 1px 0 rgba(255,255,255,0.98)",
+            ? "0 2px 48px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.12), inset 0 -1px 0 rgba(0,0,0,0.18)"
+            : "0 2px 32px rgba(0,0,0,0.10), inset 0 1.5px 0 rgba(255,255,255,0.95), inset 0 -1px 0 rgba(0,0,0,0.04)",
           transition:"background .3s",
         }}>
           {tabs.map(tb=>{
