@@ -11,7 +11,8 @@ import base64
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torchvision import transforms, models
+import timm
+from torchvision import transforms
 from PIL import Image
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -30,7 +31,6 @@ MODEL_PATH = os.path.join(os.path.dirname(__file__), "best_model_v2.pth")
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = None
 
-# Préprocessing standard rétinopathie (ImageNet normalization, 224x224)
 preprocess = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
@@ -53,25 +53,67 @@ ICDR_FINDINGS = [
     ["Néovascularisation", "Hémorragie prérétinienne", "Traction vitréorétinienne"],
 ]
 
+# Correspondance features → nom timm
+EFFICIENTNET_BY_FEATURES = {
+    1280: ["efficientnet_b0", "efficientnet_b1"],
+    1408: ["efficientnet_b2"],
+    1536: ["efficientnet_b3"],
+    1792: ["efficientnet_b4"],
+    2048: ["efficientnet_b5"],
+}
 
-NUM_CLASSES = 5
 
-ARCHITECTURES = [
-    ("resnet50",  lambda: _make_resnet(models.resnet50,  NUM_CLASSES)),
-    ("resnet34",  lambda: _make_resnet(models.resnet34,  NUM_CLASSES)),
-    ("resnet18",  lambda: _make_resnet(models.resnet18,  NUM_CLASSES)),
-    ("efficientnet_b0", lambda: _make_efficientnet("efficientnet_b0", NUM_CLASSES)),
-    ("efficientnet_b3", lambda: _make_efficientnet("efficientnet_b3", NUM_CLASSES)),
-]
+class RetineyeModel(nn.Module):
+    """Modèle custom : backbone EfficientNet (timm) + tête linéaire."""
 
-def _make_resnet(fn, n):
-    m = fn(weights=None)
-    m.fc = nn.Linear(m.fc.in_features, n)
-    return m
+    def __init__(self, backbone_name: str, in_features: int, hidden: int, num_classes: int):
+        super().__init__()
+        self.backbone = timm.create_model(
+            backbone_name, pretrained=False, num_classes=0, global_pool="avg"
+        )
+        self.head = nn.Sequential(
+            nn.Dropout(p=0.3),
+            nn.Linear(in_features, hidden),
+            nn.SiLU(),
+            nn.Dropout(p=0.2),
+            nn.Linear(hidden, num_classes),
+        )
 
-def _make_efficientnet(name, n):
-    m = getattr(models, name)(weights=None)
-    m.classifier[1] = nn.Linear(m.classifier[1].in_features, n)
+    def forward(self, x):
+        return self.head(self.backbone(x))
+
+
+def _build_and_load(state_dict) -> nn.Module:
+    """Reconstruit le modèle depuis le state dict en auto-détectant l'architecture."""
+    # Dimensions de la tête
+    head1_w = state_dict.get("head.1.weight")
+    head4_w = state_dict.get("head.4.weight")
+
+    if head1_w is None or head4_w is None:
+        raise ValueError("Clés head.1.weight / head.4.weight introuvables dans le checkpoint.")
+
+    hidden = head1_w.shape[0]       # ex. 512
+    in_features = head1_w.shape[1]  # ex. 1536 (backbone output)
+    num_classes = head4_w.shape[0]  # ex. 5
+
+    candidates = EFFICIENTNET_BY_FEATURES.get(in_features, [])
+    if not candidates:
+        raise ValueError(f"Aucun backbone connu pour in_features={in_features}")
+
+    for backbone_name in candidates:
+        try:
+            m = RetineyeModel(backbone_name, in_features, hidden, num_classes)
+            m.load_state_dict(state_dict, strict=True)
+            print(f"✅ Modèle chargé ({backbone_name}, hidden={hidden}, classes={num_classes}) sur {device}")
+            return m
+        except Exception as e:
+            print(f"   ↳ {backbone_name} strict=True échoué : {e}")
+
+    # Dernier recours : strict=False avec le premier candidat
+    backbone_name = candidates[0]
+    m = RetineyeModel(backbone_name, in_features, hidden, num_classes)
+    missing, unexpected = m.load_state_dict(state_dict, strict=False)
+    print(f"⚠️  Modèle chargé ({backbone_name}, strict=False) — manquants: {len(missing)}, inattendus: {len(unexpected)}")
     return m
 
 
@@ -84,46 +126,23 @@ def load_model():
     try:
         checkpoint = torch.load(MODEL_PATH, map_location=device, weights_only=False)
 
-        # Cas 1 : modèle complet (pas un dict)
+        # Cas 1 : modèle complet sauvegardé avec torch.save(model, ...)
         if not isinstance(checkpoint, dict):
             model = checkpoint.to(device)
             model.eval()
             print(f"✅ Modèle complet chargé sur {device}")
             return
 
-        # Cas 2 : state dict direct ou dans une clé
+        # Cas 2 : state dict (direct ou dans une clé connue)
         state_dict = (
             checkpoint.get("model_state_dict")
             or checkpoint.get("state_dict")
             or checkpoint.get("model")
-            or checkpoint  # le dict lui-même est le state dict
+            or checkpoint
         )
 
-        # Essaie chaque architecture
-        for arch_name, arch_fn in ARCHITECTURES:
-            try:
-                candidate = arch_fn()
-                candidate.load_state_dict(state_dict, strict=True)
-                model = candidate.to(device)
-                model.eval()
-                print(f"✅ Modèle chargé ({arch_name}) sur {device}")
-                return
-            except Exception:
-                continue
-
-        # Diagnostic : affiche les 20 premières clés pour identifier l'archi
-        keys = list(state_dict.keys())
-        print(f"❓ Architecture inconnue — premières clés du state dict :")
-        for k in keys[:20]:
-            print(f"   {k}")
-        print(f"   ... ({len(keys)} clés au total)")
-
-        # Dernier recours : strict=False sur resnet50
-        candidate = _make_resnet(models.resnet50, NUM_CLASSES)
-        missing, unexpected = candidate.load_state_dict(state_dict, strict=False)
-        model = candidate.to(device)
+        model = _build_and_load(state_dict).to(device)
         model.eval()
-        print(f"⚠️  Modèle chargé (strict=False) — manquants: {len(missing)}, inattendus: {len(unexpected)}")
 
     except Exception as e:
         print(f"❌ Erreur chargement modèle : {e}")
@@ -145,21 +164,17 @@ def debug_keys():
         raise HTTPException(status_code=404, detail="Fichier modèle introuvable")
     checkpoint = torch.load(MODEL_PATH, map_location="cpu", weights_only=False)
     if not isinstance(checkpoint, dict):
-        return {"type": type(checkpoint).__name__, "keys": []}
+        return {"type": type(checkpoint).__name__}
     state_dict = (
         checkpoint.get("model_state_dict")
         or checkpoint.get("state_dict")
         or checkpoint.get("model")
         or checkpoint
     )
-    # Shapes des couches "head" (critique pour reconstruire)
     head_shapes = {k: list(v.shape) for k, v in state_dict.items() if k.startswith("head.")}
-    # Première et dernière clé du backbone
     backbone_keys = [k for k in state_dict.keys() if k.startswith("backbone.")]
     return {
         "total_keys": len(state_dict),
-        "checkpoint_top_keys": list(checkpoint.keys()),
-        "first_5_keys": list(state_dict.keys())[:5],
         "head_shapes": head_shapes,
         "backbone_first_3": backbone_keys[:3],
         "backbone_last_3": backbone_keys[-3:],
@@ -169,8 +184,10 @@ def debug_keys():
 @app.post("/analyze")
 def analyze(req: AnalyzeRequest):
     if model is None:
-        raise HTTPException(status_code=503, detail="Modèle non chargé — placer best_model_v2.pth dans le dossier backend/")
-
+        raise HTTPException(
+            status_code=503,
+            detail="Modèle non chargé — placer best_model_v2.pth dans le dossier backend/",
+        )
     try:
         img_bytes = base64.b64decode(req.image)
         img = Image.open(io.BytesIO(img_bytes)).convert("RGB")
