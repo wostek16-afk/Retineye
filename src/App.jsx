@@ -150,106 +150,59 @@ function Spark({values,color}){
 }
 
 
-// ── Tab Bar — Apple Glass Effect ──────────────────────────────
+// ── Tab Bar ────────────────────────────────────────────────────
 function TabBar({tab,set}){
   const t=useTheme();
   const [pressed,setPressed]=useState(null);
-  const [bubble,setBubble]=useState(null);
-  const pillRef=useRef();
   const tColor={home:"#30d158",scan:"#0a84ff",history:"#ff9f0a",chat:"#ff9f0a",profile:"#8e8e93"};
   const tabs=[{id:"home",label:"Résumé"},{id:"scan",label:"Dépistage"},{id:"history",label:"Historique"},{id:"chat",label:"Assistant"},{id:"profile",label:"Profil"}];
   const icons={
-    home:<svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>,
-    scan:<svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx={12} cy={12} r={3}/></svg>,
-    history:<svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><circle cx={12} cy={12} r={9}/><path d="M12 7v5l3 3"/></svg>,
-    chat:<svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
-    profile:<svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx={12} cy={7} r={4}/></svg>,
+    home:<svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>,
+    scan:<svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx={12} cy={12} r={3}/></svg>,
+    history:<svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><circle cx={12} cy={12} r={9}/><path d="M12 7v5l3 3"/></svg>,
+    chat:<svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
+    profile:<svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx={12} cy={7} r={4}/></svg>,
   };
-
-  const handlePress=(id,e)=>{
-    // Liquid Glass bubble at tap position
-    const pill=pillRef.current;
-    if(pill){
-      const pillRect=pill.getBoundingClientRect();
-      const btnRect=e.currentTarget.getBoundingClientRect();
-      const x=btnRect.left+btnRect.width/2-pillRect.left;
-      const y=btnRect.top+btnRect.height/2-pillRect.top;
-      const bid=Date.now();
-      setBubble({id:bid,x,y});
-      setTimeout(()=>setBubble(b=>b?.id===bid?null:b),600);
-    }
-    setPressed(id);
-    set(id);
-    setTimeout(()=>setPressed(null),350);
-  };
-
   return(
-    // Outer: full-width fixed footer with the gradient fade (Apple "content fades into glass" effect)
     <div style={{
       position:"fixed",bottom:0,left:0,right:0,zIndex:999,
-      display:"flex",justifyContent:"center",
-      background: t.isDark
-        ? "linear-gradient(to top, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.28) 60%, transparent 100%)"
-        : "linear-gradient(to top, rgba(242,242,247,0.78) 0%, rgba(242,242,247,0.32) 60%, transparent 100%)",
-      paddingTop:36,
+      background:t.isDark?"#1c1c1e":"#ffffff",
+      borderTop:`1px solid ${t.border}`,
+      paddingBottom:"env(safe-area-inset-bottom, 0px)",
     }}>
-      <div style={{
-        width:"100%",maxWidth:430,
-        padding:"0 14px",
-        paddingBottom:"calc(env(safe-area-inset-bottom, 0px) + 10px)",
-      }}>
-        {/* iOS 26 Liquid Glass pill */}
-        <div ref={pillRef} style={{
-          background: t.isDark ? "rgba(22,22,26,0.42)" : "rgba(255,255,255,0.52)",
-          backdropFilter:"blur(64px) saturate(240%) brightness(1.12)",
-          WebkitBackdropFilter:"blur(64px) saturate(240%) brightness(1.12)",
-          borderRadius:26,
-          border: t.isDark
-            ? "1px solid rgba(255,255,255,0.14)"
-            : "1px solid rgba(255,255,255,0.72)",
-          display:"flex",alignItems:"center",
-          padding:"8px 6px 9px",
-          boxShadow: t.isDark
-            ? "0 2px 48px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.12), inset 0 -1px 0 rgba(0,0,0,0.18)"
-            : "0 2px 32px rgba(0,0,0,0.10), inset 0 1.5px 0 rgba(255,255,255,0.95), inset 0 -1px 0 rgba(0,0,0,0.04)",
-          transition:"background .3s",
-          position:"relative",overflow:"hidden",
-        }}>
-          {bubble&&<div key={bubble.id} className="liquid-bubble" style={{left:bubble.x,top:bubble.y}}/>}
-          {tabs.map(tb=>{
-            const active=tab===tb.id;
-            const color=tColor[tb.id];
-            const isPressed=pressed===tb.id;
-            return(
-              <button key={tb.id} onClick={(e)=>handlePress(tb.id,e)}
-                style={{flex:1,border:"none",background:"transparent",cursor:"pointer",
-                  display:"flex",flexDirection:"column",alignItems:"center",gap:3,
-                  padding:"2px 0",WebkitTapHighlightColor:"transparent",outline:"none"}}
-              >
-                {/* Icon with spring bounce on press + colored pill when active */}
-                <div style={{
-                  color:active?color:t.text4,
-                  transform: isPressed ? "scale(0.74)" : active ? "scale(1.06)" : "scale(1)",
-                  transition: isPressed
-                    ? "transform 0.07s ease"
-                    : "transform 0.45s cubic-bezier(.34,1.56,.64,1), color 0.2s, background 0.2s",
-                  width:40,height:34,borderRadius:12,
-                  display:"flex",alignItems:"center",justifyContent:"center",
-                  background: active ? (t.isDark ? `${color}24` : `${color}1c`) : "transparent",
-                }}>
-                  {icons[tb.id]}
-                </div>
-                <span style={{
-                  fontSize:10,fontFamily:t.sm,
-                  color:active?color:t.text4,
-                  fontWeight:active?700:400,
-                  transition:"color .2s, font-weight .2s",
-                  letterSpacing:active?-.1:0,
-                }}>{tb.label}</span>
-              </button>
-            );
-          })}
-        </div>
+      <div style={{display:"flex",maxWidth:430,margin:"0 auto"}}>
+        {tabs.map(tb=>{
+          const active=tab===tb.id;
+          const color=tColor[tb.id];
+          const isPressed=pressed===tb.id;
+          return(
+            <button key={tb.id}
+              onPointerDown={()=>setPressed(tb.id)}
+              onPointerUp={()=>{setPressed(null);set(tb.id);}}
+              onPointerLeave={()=>setPressed(null)}
+              style={{flex:1,border:"none",background:"transparent",cursor:"pointer",
+                display:"flex",flexDirection:"column",alignItems:"center",gap:2,
+                padding:"8px 0 10px",WebkitTapHighlightColor:"transparent",outline:"none",
+                transform:isPressed?"scale(0.85)":"scale(1)",
+                transition:"transform 0.1s ease",
+              }}
+            >
+              <div style={{
+                color:active?color:t.text4,
+                display:"flex",alignItems:"center",justifyContent:"center",
+                marginBottom:1,
+              }}>
+                {icons[tb.id]}
+              </div>
+              <span style={{
+                fontSize:10,fontFamily:t.sm,
+                color:active?color:t.text4,
+                fontWeight:active?600:400,
+              }}>{tb.label}</span>
+              {active&&<div style={{width:16,height:2,borderRadius:1,background:color,marginTop:2}}/>}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -509,9 +462,11 @@ function ScanScreen({user,onDone}){
     return await resp.json();
   };
   const analyzeClaude=async()=>{
+    const key=DB.get("claudeApiKey","");
+    if(!key) throw new Error("no_api_key");
     const PROMPT="Analyze this retinal fundus photo for diabetic retinopathy using ICDR scale 0-4. Return ONLY valid minified JSON with these keys: icdr_level (int 0-4), findings (short French string array max 4 items), confidence (int 50-99), notes (one French patient-facing sentence). No markdown no extra text.";
     const body={model:"claude-sonnet-4-20250514",max_tokens:350,messages:[{role:"user",content:[{type:"image",source:{type:"base64",media_type:"image/jpeg",data:b64}},{type:"text",text:PROMPT}]}]};
-    const resp=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+    const resp=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify(body)});
     const data=await resp.json();
     const txt=(data.content||[]).map(b=>b.text||"").join("");
     return JSON.parse(txt.replace(/```json|```/g,"").trim());
@@ -525,7 +480,7 @@ function ScanScreen({user,onDone}){
       setElapsed(((Date.now()-t0)/1000).toFixed(1));
       setRes(parsed);setStep("result");
     }catch(e){
-      setErr("Analyse impossible. Vérifiez qu'il s'agit d'une rétinographie ("+String(e.message||"").slice(0,40)+")");
+      setErr(e.message==="no_api_key"?"Backend IA non disponible. Configurez une clé API Claude dans les Réglages.":"Analyse impossible. Vérifiez qu'il s'agit d'une rétinographie ("+String(e.message||"").slice(0,40)+")");
       setStep("preview");
     }
   };
@@ -803,8 +758,9 @@ function ChatScreen(){
     try{
       const SYS="Tu es l'assistant medical de RetinaScore. Reponds en francais, 2-3 phrases, bienveillant et precis. Rappelle que tu ne remplaces pas un medecin.";
       const hist=nm.slice(-8).map(m=>({role:m.role==="assistant"?"assistant":"user",content:m.text}));
+      const key=DB.get("claudeApiKey","");
       const body={model:"claude-sonnet-4-20250514",max_tokens:280,system:SYS,messages:hist};
-      const resp=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+      const resp=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json",...(key?{"x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"}:{})},body:JSON.stringify(body)});
       const data=await resp.json();
       const reply=(data.content||[]).map(b=>b.text||"").join("")||"Aucune réponse.";
       setMsgs(m=>[...m,{role:"assistant",text:reply}]);
@@ -979,6 +935,9 @@ function ProfileScreen({user,scans,onDelete,onLogout,onShowAuth,onUpdateConsent,
 // ── SETTINGS ──────────────────────────────────────────────────
 function SettingsScreen({onBack,darkMode,setDarkMode}){
   const t=useTheme();
+  const [apiKey,setApiKey]=useState(()=>DB.get("claudeApiKey",""));
+  const [showKey,setShowKey]=useState(false);
+  const saveKey=(v)=>{setApiKey(v);DB.set("claudeApiKey",v.trim());};
   return(
     <div style={{padding:"0 16px",background:t.bg,minHeight:"100%",paddingBottom:140}}>
       <div style={{paddingTop:56,paddingBottom:4}}>
@@ -996,6 +955,17 @@ function SettingsScreen({onBack,darkMode,setDarkMode}){
             <div style={{width:26,height:26,borderRadius:"50%",background:"#fff",position:"absolute",top:2,left:darkMode?22:2,transition:"left .25s",boxShadow:"0 2px 6px rgba(0,0,0,0.25)"}}/>
           </div>
         </div>
+      </Card>
+      <SecTitle>IA & Backend</SecTitle>
+      <Card style={{marginBottom:12}}>
+        <div style={{color:t.text,fontSize:14,fontWeight:600,fontFamily:t.sm,marginBottom:4}}>Clé API Claude</div>
+        <div style={{color:t.text3,fontSize:12,fontFamily:t.sm,marginBottom:10,lineHeight:1.5}}>Nécessaire si le backend local n'est pas démarré. Créez une clé sur console.anthropic.com.</div>
+        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+          <input value={apiKey} onChange={e=>saveKey(e.target.value)} placeholder="sk-ant-..." type={showKey?"text":"password"}
+            style={{flex:1,background:t.bg3,border:`1px solid ${t.bg4}`,borderRadius:12,padding:"10px 13px",color:t.text,fontSize:14,fontFamily:t.sm,outline:"none"}}/>
+          <button onClick={()=>setShowKey(s=>!s)} style={{background:t.bg3,border:`1px solid ${t.bg4}`,borderRadius:10,padding:"10px 13px",color:t.text3,fontSize:12,fontFamily:t.sm,cursor:"pointer",flexShrink:0}}>{showKey?"Masquer":"Afficher"}</button>
+        </div>
+        {apiKey&&<div style={{color:"#30d158",fontSize:11,fontFamily:t.sm,marginTop:6}}>✓ Clé enregistrée localement</div>}
       </Card>
       <SecTitle>Données & Confidentialité</SecTitle>
       <Card style={{marginBottom:12}}>
