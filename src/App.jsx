@@ -482,11 +482,16 @@ function ScanScreen({user,onDone}){
   const analyze=async()=>{
     setStep("analyzing");setErr("");const t0=Date.now();
     try{
-      const parsed=await analyzeLocal();
+      let parsed;
+      try{ parsed=await analyzeLocal(); }
+      catch{ parsed=await analyzeClaude(); }
       setElapsed(((Date.now()-t0)/1000).toFixed(1));
       setRes(parsed);setStep("result");
     }catch(e){
-      setErr("Backend IA non disponible. Démarrez le serveur : cd backend && uvicorn server:app --port 8000");
+      const msg=e.message==="no_api_key"
+        ?"Aucune clé API Claude configurée. Allez dans Réglages → IA & Backend."
+        :"Analyse impossible. Vérifiez votre clé API Claude dans Réglages.";
+      setErr(msg);
       setStep("preview");
     }
   };
@@ -941,6 +946,9 @@ function ProfileScreen({user,scans,onDelete,onLogout,onShowAuth,onUpdateConsent,
 // ── SETTINGS ──────────────────────────────────────────────────
 function SettingsScreen({onBack,darkMode,setDarkMode}){
   const t=useTheme();
+  const [apiKey,setApiKey]=useState(DB.get("claudeApiKey",""));
+  const [saved,setSaved]=useState(false);
+  const saveKey=()=>{DB.set("claudeApiKey",apiKey.trim());setSaved(true);setTimeout(()=>setSaved(false),2000);};
   return(
     <div style={{padding:"0 16px",background:"transparent",minHeight:"100%",paddingBottom:140}}>
       <div style={{paddingTop:56,paddingBottom:4}}>
@@ -962,10 +970,32 @@ function SettingsScreen({onBack,darkMode,setDarkMode}){
       <SecTitle>IA & Backend</SecTitle>
       <Card style={{marginBottom:12}}>
         <div style={{display:"flex",gap:12,marginBottom:12,alignItems:"flex-start"}}>
+          <div style={{width:34,height:34,borderRadius:10,background:"rgba(191,90,242,0.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>🤖</div>
+          <div>
+            <div style={{color:t.text,fontSize:14,fontWeight:600,fontFamily:t.sm}}>Clé API Claude (Anthropic)</div>
+            <div style={{color:t.text3,fontSize:12,fontFamily:t.sm,marginTop:2,lineHeight:1.5}}>Utilisée en fallback si le modèle local est indisponible. Obtenez votre clé sur <span style={{color:"#bf5af2",fontWeight:600}}>console.anthropic.com</span></div>
+          </div>
+        </div>
+        <div style={{display:"flex",gap:8}}>
+          <input
+            value={apiKey}
+            onChange={e=>setApiKey(e.target.value)}
+            placeholder="sk-ant-..."
+            type="password"
+            style={{flex:1,background:t.bg3,border:`1px solid ${apiKey?"#bf5af2":t.bg4}`,borderRadius:10,padding:"10px 12px",color:t.text,fontSize:13,fontFamily:"'Courier New',monospace",outline:"none"}}
+          />
+          <button onClick={saveKey} style={{padding:"10px 16px",borderRadius:10,border:"none",background:saved?"#30d158":"#bf5af2",color:"#fff",fontFamily:t.sm,fontSize:13,fontWeight:700,cursor:"pointer",transition:"background .25s",whiteSpace:"nowrap"}}>
+            {saved?"✓ OK":"Sauver"}
+          </button>
+        </div>
+        {apiKey&&<div style={{color:"#30d158",fontSize:11,fontFamily:t.sm,marginTop:7}}>✓ Clé configurée — l'analyse basculera sur Claude si le backend local est hors ligne.</div>}
+      </Card>
+      <Card style={{marginBottom:12}}>
+        <div style={{display:"flex",gap:12,marginBottom:12,alignItems:"flex-start"}}>
           <div style={{width:34,height:34,borderRadius:10,background:"rgba(10,132,255,0.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>🧠</div>
           <div>
-            <div style={{color:t.text,fontSize:14,fontWeight:600,fontFamily:t.sm}}>Modèle entraîné local</div>
-            <div style={{color:t.text3,fontSize:12,fontFamily:t.sm,marginTop:2,lineHeight:1.5}}>Analyse via votre modèle <span style={{color:"#0a84ff",fontWeight:600}}>best_model_v2.pth</span> — aucun serveur externe.</div>
+            <div style={{color:t.text,fontSize:14,fontWeight:600,fontFamily:t.sm}}>Modèle local (optionnel)</div>
+            <div style={{color:t.text3,fontSize:12,fontFamily:t.sm,marginTop:2,lineHeight:1.5}}>Analyse via <span style={{color:"#0a84ff",fontWeight:600}}>best_model_v2.pth</span> — prioritaire si le backend tourne.</div>
           </div>
         </div>
         <div style={{background:"rgba(10,132,255,0.08)",borderRadius:12,padding:"10px 13px",border:"1px solid rgba(10,132,255,0.2)"}}>
