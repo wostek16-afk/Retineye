@@ -52,8 +52,8 @@ const FAQ=[
   {keys:["salut","bonjour","bonsoir","hello"],a:"Bonjour ! Je suis l'assistant RetinaScore. Je peux répondre à vos questions sur la rétinopathie diabétique, la glycémie, l'acuité visuelle ou l'application."},
 ];
 
-const DARK={isDark:true,bg:"#000000",bg2:"#1c1c1e",bg3:"#2c2c2e",bg4:"#3a3a3c",text:"#ffffff",text2:"rgba(235,235,245,0.85)",text3:"#8e8e93",text4:"#48484a",border:"rgba(255,255,255,0.08)",sf:"'SF Pro Display',-apple-system,BlinkMacSystemFont,system-ui,sans-serif",sm:"'SF Pro Text',-apple-system,BlinkMacSystemFont,system-ui,sans-serif"};
-const LIGHT={isDark:false,bg:"#f2f2f7",bg2:"#ffffff",bg3:"#f2f2f7",bg4:"#e5e5ea",text:"#000000",text2:"#1c1c1e",text3:"#636366",text4:"#aeaeb2",border:"rgba(0,0,0,0.07)",sf:"'SF Pro Display',-apple-system,BlinkMacSystemFont,system-ui,sans-serif",sm:"'SF Pro Text',-apple-system,BlinkMacSystemFont,system-ui,sans-serif"};
+const DARK={isDark:true,bg:"transparent",bg2:"rgba(28,28,30,0.88)",bg3:"rgba(44,44,46,0.82)",bg4:"#3a3a3c",text:"#ffffff",text2:"rgba(235,235,245,0.85)",text3:"#8e8e93",text4:"#48484a",border:"rgba(255,255,255,0.08)",glass:"rgba(255,255,255,0.07)",glassBorder:"rgba(255,255,255,0.16)",glassHigh:"rgba(255,255,255,0.10)",glassShadow:"0 8px 32px rgba(0,0,0,0.5),inset 0 1px 0 rgba(255,255,255,0.14)",sf:"'SF Pro Display',-apple-system,BlinkMacSystemFont,system-ui,sans-serif",sm:"'SF Pro Text',-apple-system,BlinkMacSystemFont,system-ui,sans-serif"};
+const LIGHT={isDark:false,bg:"transparent",bg2:"rgba(255,255,255,0.82)",bg3:"rgba(242,242,247,0.78)",bg4:"#e5e5ea",text:"#000000",text2:"#1c1c1e",text3:"#636366",text4:"#aeaeb2",border:"rgba(0,0,0,0.07)",glass:"rgba(255,255,255,0.60)",glassBorder:"rgba(255,255,255,0.88)",glassHigh:"rgba(255,255,255,0.78)",glassShadow:"0 8px 32px rgba(0,0,0,0.10),inset 0 1px 0 rgba(255,255,255,0.95)",sf:"'SF Pro Display',-apple-system,BlinkMacSystemFont,system-ui,sans-serif",sm:"'SF Pro Text',-apple-system,BlinkMacSystemFont,system-ui,sans-serif"};
 
 // ── Ring SVG ──────────────────────────────────────────────────
 function Ring({size=130,sw=12,progress=0,color,delay=0}){
@@ -88,8 +88,13 @@ function Card({children,style={},onClick}){
   const t=useTheme();
   return(
     <div onClick={onClick} style={{
-      background:t.bg2,borderRadius:18,padding:"14px 16px",
-      border:`1px solid ${t.border}`,cursor:onClick?"pointer":"default",...style
+      background:t.glass,
+      backdropFilter:"blur(24px) saturate(1.8)",
+      WebkitBackdropFilter:"blur(24px) saturate(1.8)",
+      borderRadius:20,padding:"14px 16px",
+      border:`1px solid ${t.glassBorder}`,
+      boxShadow:t.glassShadow,
+      cursor:onClick?"pointer":"default",...style
     }}>{children}</div>
   );
 }
@@ -166,8 +171,11 @@ function TabBar({tab,set}){
   return(
     <div style={{
       position:"fixed",bottom:0,left:0,right:0,zIndex:999,
-      background:t.isDark?"#1c1c1e":"#ffffff",
-      borderTop:`1px solid ${t.border}`,
+      background:t.isDark?"rgba(8,8,12,0.72)":"rgba(248,248,252,0.78)",
+      backdropFilter:"blur(32px) saturate(2.2)",
+      WebkitBackdropFilter:"blur(32px) saturate(2.2)",
+      borderTop:`1px solid ${t.glassBorder}`,
+      boxShadow:t.isDark?"0 -1px 0 rgba(255,255,255,0.06),0 -8px 24px rgba(0,0,0,0.3)":"0 -1px 0 rgba(0,0,0,0.05),0 -8px 24px rgba(0,0,0,0.06)",
       paddingBottom:"env(safe-area-inset-bottom, 0px)",
     }}>
       <div style={{display:"flex",maxWidth:430,margin:"0 auto"}}>
@@ -237,7 +245,7 @@ function HomeScreen({user,scans,glycLogs,onNavigate,onGoGlyc,onGoVision,onGoRDV}
   ];
   const dateStr=now.toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"});
   return(
-    <div style={{padding:"0 16px",background:t.bg,minHeight:"100%",paddingBottom:140}}>
+    <div style={{padding:"0 16px",background:"transparent",minHeight:"100%",paddingBottom:140}}>
       {/* Header */}
       <div style={{paddingTop:56,paddingBottom:4}} className="fade-up">
         <div style={{color:t.text3,fontSize:13,fontFamily:t.sm}}>{dateStr.charAt(0).toUpperCase()+dateStr.slice(1)}</div>
@@ -374,7 +382,7 @@ function GlycemiaScreen({glycLogs,onSave,onBack}){
   const chartData=dates.map(d=>{const dl=glycLogs.filter(g=>g.date===d);return{date:d,avg:dl.reduce((a,g)=>a+g.value,0)/dl.length};});
   const todayStr=new Date().toISOString().slice(0,10);
   return(
-    <div style={{padding:"0 16px",background:t.bg,minHeight:"100%",paddingBottom:140}}>
+    <div style={{padding:"0 16px",background:"transparent",minHeight:"100%",paddingBottom:140}}>
       <div style={{paddingTop:56}}>
         <BackBtn onBack={onBack} label="Résumé"/>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
@@ -474,13 +482,11 @@ function ScanScreen({user,onDone}){
   const analyze=async()=>{
     setStep("analyzing");setErr("");const t0=Date.now();
     try{
-      let parsed;
-      try{ parsed=await analyzeLocal(); }
-      catch{ parsed=await analyzeClaude(); }
+      const parsed=await analyzeLocal();
       setElapsed(((Date.now()-t0)/1000).toFixed(1));
       setRes(parsed);setStep("result");
     }catch(e){
-      setErr(e.message==="no_api_key"?"Backend IA non disponible. Configurez une clé API Claude dans les Réglages.":"Analyse impossible. Vérifiez qu'il s'agit d'une rétinographie ("+String(e.message||"").slice(0,40)+")");
+      setErr("Backend IA non disponible. Démarrez le serveur : cd backend && uvicorn server:app --port 8000");
       setStep("preview");
     }
   };
@@ -491,7 +497,7 @@ function ScanScreen({user,onDone}){
   };
   const cur={pick:0,preview:0,analyzing:1,result:2}[step]||0;
   return(
-    <div style={{padding:"0 16px",background:t.bg,minHeight:"100%",paddingBottom:140}}>
+    <div style={{padding:"0 16px",background:"transparent",minHeight:"100%",paddingBottom:140}}>
       <div style={{paddingTop:56,paddingBottom:16}}>
         <div style={{color:t.text,fontSize:30,fontWeight:700,letterSpacing:-.8,fontFamily:t.sf}}>Dépistage</div>
         <div style={{color:t.text3,fontSize:14,fontFamily:t.sm,marginTop:3}}>Analyse IA — Fond d'œil</div>
@@ -582,7 +588,7 @@ function HistoryScreen({scans,glycLogs,onScanDetail}){
   ].sort((a,b)=>new Date(b.date)-new Date(a.date));
   const shown=filter==="all"?all:all.filter(i=>i._k===filter);
   return(
-    <div style={{padding:"0 16px",background:t.bg,minHeight:"100%",paddingBottom:140}}>
+    <div style={{padding:"0 16px",background:"transparent",minHeight:"100%",paddingBottom:140}}>
       <div style={{paddingTop:56,paddingBottom:4}}>
         <div style={{color:t.text,fontSize:30,fontWeight:700,letterSpacing:-.8,fontFamily:t.sf}}>Historique</div>
         <div style={{color:t.text3,fontSize:13,fontFamily:t.sm,marginTop:2,marginBottom:14}}>{all.length} entrée{all.length!==1?"s":""}</div>
@@ -660,7 +666,7 @@ function VisionScreen({onBack}){
   const reset=()=>{setPhase("intro");setLine(0);setEye("OD");setDone({OD:null,OG:null});};
   const switchTest=(type)=>{setTestType(type);reset();};
   return(
-    <div style={{padding:"0 16px",background:t.bg,minHeight:"100%",paddingBottom:140}}>
+    <div style={{padding:"0 16px",background:"transparent",minHeight:"100%",paddingBottom:140}}>
       <div style={{paddingTop:56,paddingBottom:14}}>
         {onBack&&<BackBtn onBack={onBack} label="Résumé"/>}
         <div style={{color:t.text,fontSize:30,fontWeight:700,letterSpacing:-.8,fontFamily:t.sf}}>Acuité visuelle</div>
@@ -771,7 +777,7 @@ function ChatScreen(){
   };
   const suggestions=["Qu'est-ce que la RD ?","Score ICDR ?","Glycémie cible ?","Traitements disponibles ?"];
   return(
-    <div style={{display:"flex",flexDirection:"column",height:"100%",background:t.bg}}>
+    <div style={{display:"flex",flexDirection:"column",height:"100%",background:"transparent"}}>
       {/* Header with glass effect */}
       <div style={{
         padding:"56px 16px 12px",
@@ -820,7 +826,7 @@ function ChatScreen(){
       </div>
       <div style={{color:t.text4,fontSize:10,fontFamily:t.sm,textAlign:"center",padding:"4px 0"}}>Messages non conservés · Pas un avis médical</div>
       {/* Input bar — sits above tab bar */}
-      <div style={{padding:"8px 12px",paddingBottom:"calc(env(safe-area-inset-bottom, 0px) + 100px)",background:t.bg,flexShrink:0}}>
+      <div style={{padding:"8px 12px",paddingBottom:"calc(env(safe-area-inset-bottom, 0px) + 100px)",background:t.isDark?"rgba(0,0,0,0.5)":"rgba(248,248,252,0.6)",backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",flexShrink:0}}>
         <div style={{display:"flex",gap:8,alignItems:"center",background:t.bg2,borderRadius:24,padding:"6px 6px 6px 15px",border:`1px solid ${t.border}`}}>
           <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}}}
             placeholder="Posez votre question…"
@@ -842,7 +848,7 @@ function ProfileScreen({user,scans,onDelete,onLogout,onShowAuth,onUpdateConsent,
   if(detail){
     const info=ICDR[Math.min(Math.max(detail.icdr_level,0),4)];
     return(
-      <div style={{padding:"0 16px",background:t.bg,minHeight:"100%",paddingBottom:140}}>
+      <div style={{padding:"0 16px",background:"transparent",minHeight:"100%",paddingBottom:140}}>
         <div style={{paddingTop:56}}><BackBtn onBack={()=>setDetail(null)} label="Profil"/></div>
         {detail.image&&<img src={detail.image} alt="" style={{width:"100%",borderRadius:18,objectFit:"contain",maxHeight:230,background:"#111",display:"block",marginBottom:12}}/>}
         <div style={{background:info.bg,borderRadius:18,padding:"15px",border:`1px solid ${info.color}44`,marginBottom:12}}>
@@ -879,7 +885,7 @@ function ProfileScreen({user,scans,onDelete,onLogout,onShowAuth,onUpdateConsent,
     );
   }
   return(
-    <div style={{padding:"0 16px",background:t.bg,minHeight:"100%",paddingBottom:140}}>
+    <div style={{padding:"0 16px",background:"transparent",minHeight:"100%",paddingBottom:140}}>
       <div style={{paddingTop:56,paddingBottom:18}}>
         <div style={{color:t.text,fontSize:30,fontWeight:700,letterSpacing:-.8,fontFamily:t.sf}}>Profil</div>
       </div>
@@ -935,11 +941,8 @@ function ProfileScreen({user,scans,onDelete,onLogout,onShowAuth,onUpdateConsent,
 // ── SETTINGS ──────────────────────────────────────────────────
 function SettingsScreen({onBack,darkMode,setDarkMode}){
   const t=useTheme();
-  const [apiKey,setApiKey]=useState(()=>DB.get("claudeApiKey",""));
-  const [showKey,setShowKey]=useState(false);
-  const saveKey=(v)=>{setApiKey(v);DB.set("claudeApiKey",v.trim());};
   return(
-    <div style={{padding:"0 16px",background:t.bg,minHeight:"100%",paddingBottom:140}}>
+    <div style={{padding:"0 16px",background:"transparent",minHeight:"100%",paddingBottom:140}}>
       <div style={{paddingTop:56,paddingBottom:4}}>
         <BackBtn onBack={onBack} label="Résumé"/>
         <div style={{color:t.text,fontSize:30,fontWeight:700,letterSpacing:-.8,fontFamily:t.sf}}>Réglages</div>
@@ -958,14 +961,17 @@ function SettingsScreen({onBack,darkMode,setDarkMode}){
       </Card>
       <SecTitle>IA & Backend</SecTitle>
       <Card style={{marginBottom:12}}>
-        <div style={{color:t.text,fontSize:14,fontWeight:600,fontFamily:t.sm,marginBottom:4}}>Clé API Claude</div>
-        <div style={{color:t.text3,fontSize:12,fontFamily:t.sm,marginBottom:10,lineHeight:1.5}}>Nécessaire si le backend local n'est pas démarré. Créez une clé sur console.anthropic.com.</div>
-        <div style={{display:"flex",gap:8,alignItems:"center"}}>
-          <input value={apiKey} onChange={e=>saveKey(e.target.value)} placeholder="sk-ant-..." type={showKey?"text":"password"}
-            style={{flex:1,background:t.bg3,border:`1px solid ${t.bg4}`,borderRadius:12,padding:"10px 13px",color:t.text,fontSize:14,fontFamily:t.sm,outline:"none"}}/>
-          <button onClick={()=>setShowKey(s=>!s)} style={{background:t.bg3,border:`1px solid ${t.bg4}`,borderRadius:10,padding:"10px 13px",color:t.text3,fontSize:12,fontFamily:t.sm,cursor:"pointer",flexShrink:0}}>{showKey?"Masquer":"Afficher"}</button>
+        <div style={{display:"flex",gap:12,marginBottom:12,alignItems:"flex-start"}}>
+          <div style={{width:34,height:34,borderRadius:10,background:"rgba(10,132,255,0.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>🧠</div>
+          <div>
+            <div style={{color:t.text,fontSize:14,fontWeight:600,fontFamily:t.sm}}>Modèle entraîné local</div>
+            <div style={{color:t.text3,fontSize:12,fontFamily:t.sm,marginTop:2,lineHeight:1.5}}>Analyse via votre modèle <span style={{color:"#0a84ff",fontWeight:600}}>best_model_v2.pth</span> — aucun serveur externe.</div>
+          </div>
         </div>
-        {apiKey&&<div style={{color:"#30d158",fontSize:11,fontFamily:t.sm,marginTop:6}}>✓ Clé enregistrée localement</div>}
+        <div style={{background:"rgba(10,132,255,0.08)",borderRadius:12,padding:"10px 13px",border:"1px solid rgba(10,132,255,0.2)"}}>
+          <div style={{color:t.text3,fontSize:10,fontFamily:t.sm,marginBottom:6,fontWeight:700,textTransform:"uppercase",letterSpacing:.6}}>Démarrer le backend</div>
+          <div style={{color:"#0a84ff",fontSize:12,fontFamily:"'Courier New',monospace",letterSpacing:.2,lineHeight:1.8,whiteSpace:"pre"}}>{"cd backend\npip install -r requirements.txt\nuvicorn server:app --host 0.0.0.0 --port 8000"}</div>
+        </div>
       </Card>
       <SecTitle>Données & Confidentialité</SecTitle>
       <Card style={{marginBottom:12}}>
@@ -1017,7 +1023,7 @@ function RDVScreen({onBack}){
     if(diff===0) return"Aujourd'hui";if(diff===1) return"Demain";if(diff>0) return`Dans ${diff} jours`;return`Il y a ${-diff} jours`;
   };
   return(
-    <div style={{padding:"0 16px",background:t.bg,minHeight:"100%",paddingBottom:140}}>
+    <div style={{padding:"0 16px",background:"transparent",minHeight:"100%",paddingBottom:140}}>
       <div style={{paddingTop:56}}>
         <BackBtn onBack={onBack} label="Résumé"/>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
@@ -1099,7 +1105,7 @@ function LandingScreen({onGuest,onLogin,onRegister}){
   const [a,setA]=useState(false);
   useEffect(()=>{setTimeout(()=>setA(true),60);},[]);
   return(
-    <div style={{minHeight:"100%",background:t.bg,display:"flex",flexDirection:"column",padding:"0 20px 44px",position:"relative",overflow:"hidden"}}>
+    <div style={{minHeight:"100%",background:"transparent",display:"flex",flexDirection:"column",padding:"0 20px 44px",position:"relative",overflow:"hidden"}}>
       <div style={{position:"absolute",top:-80,left:"50%",transform:"translateX(-50%)",width:320,height:320,borderRadius:"50%",background:"radial-gradient(circle,rgba(10,132,255,.14) 0%,transparent 70%)",pointerEvents:"none"}}/>
       <div style={{paddingTop:88,textAlign:"center",opacity:a?1:0,transform:a?"translateY(0)":"translateY(14px)",transition:"all .5s ease"}}>
         <div style={{width:82,height:82,borderRadius:24,background:"linear-gradient(145deg,#0a84ff,#30d158)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px",boxShadow:"0 16px 50px rgba(10,132,255,.28)"}}>
@@ -1196,7 +1202,7 @@ function ConsentScreen({onAccept,onDecline}){
   const [ck,setCk]=useState({a:false,b:false,c:false});
   const all=Object.values(ck).every(Boolean);
   return(
-    <div style={{minHeight:"100%",background:t.bg,display:"flex",flexDirection:"column",padding:"0 20px 44px",overflowY:"auto"}}>
+    <div style={{minHeight:"100%",background:"transparent",display:"flex",flexDirection:"column",padding:"0 20px 44px",overflowY:"auto"}}>
       <div style={{paddingTop:60,paddingBottom:22,textAlign:"center"}} className="fade-up">
         <div style={{width:62,height:62,borderRadius:18,background:"rgba(10,132,255,.1)",border:"1px solid rgba(10,132,255,.3)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px"}}>
           <svg width={26} height={26} viewBox="0 0 24 24" fill="none" stroke="#0a84ff" strokeWidth={1.6} strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
@@ -1320,7 +1326,7 @@ export default function App(){
   // ── Landing screen (no tab bar)
   if(screen==="landing") return(
     <ThemeCtx.Provider value={t}>
-      <div style={{background:t.bg,width:"100vw",height:"100vh",overflow:"hidden",position:"relative",maxWidth:430,margin:"0 auto"}}>
+      <div style={{background:t.isDark?"radial-gradient(ellipse 65% 55% at 18% 22%, rgba(10,132,255,0.22) 0%, transparent 100%), radial-gradient(ellipse 55% 65% at 82% 78%, rgba(191,90,242,0.16) 0%, transparent 100%), #000000":"radial-gradient(ellipse 65% 55% at 18% 22%, rgba(10,132,255,0.09) 0%, transparent 100%), #f2f2f7",width:"100vw",height:"100vh",overflow:"hidden",position:"relative",maxWidth:430,margin:"0 auto"}}>
         <div style={{width:"100%",height:"100%",overflowY:"auto",overflowX:"hidden"}}>
           <LandingScreen onGuest={()=>setScreen("app")} onLogin={()=>{setAuthMode("login");setShowAuth(true);}} onRegister={()=>{setAuthMode("register");setShowAuth(true);}}/>
         </div>
@@ -1349,7 +1355,9 @@ export default function App(){
       `}</style>
 
       <div style={{
-        background:t.bg,
+        background:t.isDark
+          ?"radial-gradient(ellipse 65% 55% at 18% 22%, rgba(10,132,255,0.22) 0%, transparent 100%), radial-gradient(ellipse 55% 65% at 82% 78%, rgba(191,90,242,0.16) 0%, transparent 100%), radial-gradient(ellipse 40% 40% at 50% 50%, rgba(48,209,88,0.07) 0%, transparent 100%), #000000"
+          :"radial-gradient(ellipse 65% 55% at 18% 22%, rgba(10,132,255,0.09) 0%, transparent 100%), radial-gradient(ellipse 55% 65% at 82% 78%, rgba(191,90,242,0.07) 0%, transparent 100%), #f2f2f7",
         width:"100vw",
         height:"100%",
         maxWidth:430,
