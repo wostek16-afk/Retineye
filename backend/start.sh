@@ -40,6 +40,13 @@ fi
 
 source "$VENV/bin/activate"
 
+# Vérifie et corrige NumPy (doit être < 2)
+NUMPY_OK=$(python -c "import numpy; v=numpy.__version__; print('ok' if int(v.split('.')[0]) < 2 else 'bad')" 2>/dev/null || echo "missing")
+if [ "$NUMPY_OK" != "ok" ]; then
+  echo "⚙️  Correction de NumPy (downgrade vers numpy<2)..."
+  pip install "numpy<2" -q
+fi
+
 # Installe les dépendances si besoin
 if ! python -c "import torch" 2>/dev/null; then
   echo "⚙️  Installation des dépendances (peut prendre quelques minutes)..."
