@@ -140,7 +140,7 @@ def health():
 
 @app.get("/debug/keys")
 def debug_keys():
-    """Retourne les clés du state dict pour identifier l'architecture."""
+    """Retourne les clés + shapes pour identifier l'architecture."""
     if not os.path.exists(MODEL_PATH):
         raise HTTPException(status_code=404, detail="Fichier modèle introuvable")
     checkpoint = torch.load(MODEL_PATH, map_location="cpu", weights_only=False)
@@ -152,12 +152,17 @@ def debug_keys():
         or checkpoint.get("model")
         or checkpoint
     )
-    keys = list(state_dict.keys())
+    # Shapes des couches "head" (critique pour reconstruire)
+    head_shapes = {k: list(v.shape) for k, v in state_dict.items() if k.startswith("head.")}
+    # Première et dernière clé du backbone
+    backbone_keys = [k for k in state_dict.keys() if k.startswith("backbone.")]
     return {
-        "total_keys": len(keys),
-        "first_20": keys[:20],
-        "last_5": keys[-5:],
-        "checkpoint_top_keys": list(checkpoint.keys()) if isinstance(checkpoint, dict) else [],
+        "total_keys": len(state_dict),
+        "checkpoint_top_keys": list(checkpoint.keys()),
+        "first_5_keys": list(state_dict.keys())[:5],
+        "head_shapes": head_shapes,
+        "backbone_first_3": backbone_keys[:3],
+        "backbone_last_3": backbone_keys[-3:],
     }
 
 
