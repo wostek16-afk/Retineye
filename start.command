@@ -11,14 +11,15 @@ if [ ! -d "venv" ]; then
   echo "Installation des dépendances (1ère fois seulement)..."
   python3.12 -m venv venv
   source venv/bin/activate
-  pip install fastapi uvicorn pillow pydantic numpy timm
+  pip install fastapi uvicorn pillow pydantic numpy "timm>=0.9.0"
   pip install torch torchvision
+  pip install --upgrade numpy
 else
   source venv/bin/activate
 fi
 
 echo "Démarrage du backend IA..."
-python3 server.py &
+uvicorn server:app --host 0.0.0.0 --port 8000 &
 BACKEND_PID=$!
 
 cd ..
