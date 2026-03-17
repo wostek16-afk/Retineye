@@ -208,7 +208,7 @@ def analyze(req: AnalyzeRequest):
             probs = F.softmax(outputs, dim=1)[0]
             icdr_level = int(probs.argmax().item())
             confidence = int(probs[icdr_level].item() * 100)
-            confidence = max(50, min(99, confidence)))
+            confidence = max(50, min(99, confidence))
 
         return {
             "icdr_level": icdr_level,
