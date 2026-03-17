@@ -154,6 +154,8 @@ function Spark({values,color}){
 function TabBar({tab,set}){
   const t=useTheme();
   const [pressed,setPressed]=useState(null);
+  const [bubble,setBubble]=useState(null);
+  const pillRef=useRef();
   const tColor={home:"#30d158",scan:"#0a84ff",history:"#ff9f0a",chat:"#ff9f0a",profile:"#8e8e93"};
   const tabs=[{id:"home",label:"Résumé"},{id:"scan",label:"Dépistage"},{id:"history",label:"Historique"},{id:"chat",label:"Assistant"},{id:"profile",label:"Profil"}];
   const icons={
@@ -164,7 +166,18 @@ function TabBar({tab,set}){
     profile:<svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx={12} cy={7} r={4}/></svg>,
   };
 
-  const handlePress=(id)=>{
+  const handlePress=(id,e)=>{
+    // Liquid Glass bubble at tap position
+    const pill=pillRef.current;
+    if(pill){
+      const pillRect=pill.getBoundingClientRect();
+      const btnRect=e.currentTarget.getBoundingClientRect();
+      const x=btnRect.left+btnRect.width/2-pillRect.left;
+      const y=btnRect.top+btnRect.height/2-pillRect.top;
+      const bid=Date.now();
+      setBubble({id:bid,x,y});
+      setTimeout(()=>setBubble(b=>b?.id===bid?null:b),600);
+    }
     setPressed(id);
     set(id);
     setTimeout(()=>setPressed(null),350);
@@ -186,7 +199,7 @@ function TabBar({tab,set}){
         paddingBottom:"calc(env(safe-area-inset-bottom, 0px) + 10px)",
       }}>
         {/* iOS 18 Liquid Glass pill */}
-        <div style={{
+        <div ref={pillRef} style={{
           background: t.isDark ? "rgba(22,22,26,0.42)" : "rgba(255,255,255,0.52)",
           backdropFilter:"blur(64px) saturate(240%) brightness(1.12)",
           WebkitBackdropFilter:"blur(64px) saturate(240%) brightness(1.12)",
@@ -200,13 +213,15 @@ function TabBar({tab,set}){
             ? "0 2px 48px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.12), inset 0 -1px 0 rgba(0,0,0,0.18)"
             : "0 2px 32px rgba(0,0,0,0.10), inset 0 1.5px 0 rgba(255,255,255,0.95), inset 0 -1px 0 rgba(0,0,0,0.04)",
           transition:"background .3s",
+          position:"relative",overflow:"hidden",
         }}>
+          {bubble&&<div key={bubble.id} className="liquid-bubble" style={{left:bubble.x,top:bubble.y}}/>}
           {tabs.map(tb=>{
             const active=tab===tb.id;
             const color=tColor[tb.id];
             const isPressed=pressed===tb.id;
             return(
-              <button key={tb.id} onClick={()=>handlePress(tb.id)}
+              <button key={tb.id} onClick={(e)=>handlePress(tb.id,e)}
                 style={{flex:1,border:"none",background:"transparent",cursor:"pointer",
                   display:"flex",flexDirection:"column",alignItems:"center",gap:3,
                   padding:"2px 0",WebkitTapHighlightColor:"transparent",outline:"none"}}
@@ -484,15 +499,29 @@ function ScanScreen({user,onDone}){
     r.onload=e=>{setImg(e.target.result);setB64(e.target.result.split(",")[1]);setStep("preview");};
     r.readAsDataURL(f);
   };
+  const analyzeLocal=async()=>{
+    const resp=await fetch("http://localhost:8000/analyze",{
+      method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({image:b64}),
+      signal:AbortSignal.timeout(8000),
+    });
+    if(!resp.ok) throw new Error("backend_error");
+    return await resp.json();
+  };
+  const analyzeClaude=async()=>{
+    const PROMPT="Analyze this retinal fundus photo for diabetic retinopathy using ICDR scale 0-4. Return ONLY valid minified JSON with these keys: icdr_level (int 0-4), findings (short French string array max 4 items), confidence (int 50-99), notes (one French patient-facing sentence). No markdown no extra text.";
+    const body={model:"claude-sonnet-4-20250514",max_tokens:350,messages:[{role:"user",content:[{type:"image",source:{type:"base64",media_type:"image/jpeg",data:b64}},{type:"text",text:PROMPT}]}]};
+    const resp=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+    const data=await resp.json();
+    const txt=(data.content||[]).map(b=>b.text||"").join("");
+    return JSON.parse(txt.replace(/```json|```/g,"").trim());
+  };
   const analyze=async()=>{
     setStep("analyzing");setErr("");const t0=Date.now();
     try{
-      const PROMPT="Analyze this retinal fundus photo for diabetic retinopathy using ICDR scale 0-4. Return ONLY valid minified JSON with these keys: icdr_level (int 0-4), findings (short French string array max 4 items), confidence (int 50-99), notes (one French patient-facing sentence). No markdown no extra text.";
-      const body={model:"claude-sonnet-4-20250514",max_tokens:350,messages:[{role:"user",content:[{type:"image",source:{type:"base64",media_type:"image/jpeg",data:b64}},{type:"text",text:PROMPT}]}]};
-      const resp=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
-      const data=await resp.json();
-      const txt=(data.content||[]).map(b=>b.text||"").join("");
-      const parsed=JSON.parse(txt.replace(/```json|```/g,"").trim());
+      let parsed;
+      try{ parsed=await analyzeLocal(); }
+      catch{ parsed=await analyzeClaude(); }
       setElapsed(((Date.now()-t0)/1000).toFixed(1));
       setRes(parsed);setStep("result");
     }catch(e){
@@ -874,6 +903,19 @@ function ProfileScreen({user,scans,onDelete,onLogout,onShowAuth,onUpdateConsent,
         {detail.findings?.length>0&&<Card style={{marginBottom:12}}>
           <div style={{color:t.text3,fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:8,fontFamily:t.sm}}>Signes observés</div>
           <div style={{display:"flex",flexWrap:"wrap",gap:6}}>{detail.findings.map((f,i)=><span key={i} style={{background:t.bg3,color:t.text2,borderRadius:20,padding:"4px 11px",fontSize:12,fontFamily:t.sm}}>{f}</span>)}</div>
+        </Card>}
+        {(detail.notes||detail.confidence)&&<Card style={{marginBottom:12}}>
+          <div style={{color:t.text3,fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:8,fontFamily:t.sm}}>Analyse IA</div>
+          {detail.notes&&<div style={{color:t.text2,fontSize:13,fontFamily:t.sm,lineHeight:1.55,marginBottom:detail.confidence?10:0}}>{detail.notes}</div>}
+          {detail.confidence&&<div>
+            <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>
+              <span style={{color:t.text3,fontSize:11,fontFamily:t.sm}}>Score de confiance</span>
+              <span style={{color:"#0a84ff",fontSize:11,fontWeight:700,fontFamily:t.sm}}>{detail.confidence}%</span>
+            </div>
+            <div style={{height:5,borderRadius:3,background:t.bg3,overflow:"hidden"}}>
+              <div style={{width:`${detail.confidence}%`,height:"100%",borderRadius:3,background:"linear-gradient(90deg,#0a84ff,#30d158)",transition:"width .6s ease"}}/>
+            </div>
+          </div>}
         </Card>}
         {detail.icdr_level>=3&&<a href="https://www.doctolib.fr/ophtalmologue" target="_blank" rel="noopener noreferrer" style={{display:"block",textDecoration:"none",width:"100%",padding:"11px 0",borderRadius:12,background:"#ff453a",color:"#fff",fontSize:14,fontWeight:700,fontFamily:t.sm,textAlign:"center",marginBottom:10}}>🏥 Prendre RDV ophtalmologue →</a>}
         <button onClick={()=>{onDelete(detail.id);setDetail(null);}} style={{width:"100%",padding:12,borderRadius:12,border:"1px solid rgba(255,69,58,.25)",background:"rgba(255,69,58,.08)",color:"#ff453a",fontFamily:t.sm,fontSize:14,cursor:"pointer"}}>🗑️ Supprimer</button>
