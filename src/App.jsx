@@ -171,8 +171,11 @@ function TabBar({tab,set}){
   return(
     <div style={{
       position:"fixed",bottom:0,left:0,right:0,zIndex:999,
-      background:t.isDark?"#1c1c1e":"#f2f2f7",
-      borderTop:`1px solid ${t.border}`,
+      background:t.isDark?"rgba(18,18,20,0.70)":"rgba(250,250,252,0.65)",
+      backdropFilter:"blur(48px) saturate(2.4)",
+      WebkitBackdropFilter:"blur(48px) saturate(2.4)",
+      borderTop:`0.5px solid ${t.isDark?"rgba(255,255,255,0.12)":"rgba(0,0,0,0.07)"}`,
+      boxShadow:t.isDark?"0 -1px 0 rgba(255,255,255,0.06)":"0 -1px 0 rgba(0,0,0,0.04)",
       paddingBottom:"env(safe-area-inset-bottom, 0px)",
     }}>
       <div style={{display:"flex",maxWidth:430,margin:"0 auto"}}>
@@ -186,10 +189,17 @@ function TabBar({tab,set}){
                 padding:"8px 0 10px",WebkitTapHighlightColor:"transparent",outline:"none",
               }}
             >
-              <div style={{color:active?color:t.text4,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:1}}>
+              <div style={{
+                color:active?color:t.text4,
+                display:"flex",alignItems:"center",justifyContent:"center",
+                marginBottom:1,
+                background:active?(t.isDark?color+"2a":color+"1e"):"transparent",
+                borderRadius:14,padding:"5px 16px",
+                transition:"background .22s, color .22s",
+              }}>
                 {icons[tb.id]}
               </div>
-              <span style={{fontSize:10,fontFamily:t.sm,color:active?color:t.text4,fontWeight:active?600:400}}>{tb.label}</span>
+              <span style={{fontSize:10,fontFamily:t.sm,color:active?color:t.text4,fontWeight:active?600:400,transition:"color .22s"}}>{tb.label}</span>
             </button>
           );
         })}
@@ -350,7 +360,7 @@ function GlycemiaScreen({glycLogs,onSave,onBack}){
   const [form,setForm]=useState({moment:"Matin",value:"",note:"",date:new Date().toISOString().slice(0,10)});
   const [err,setErr]=useState("");
   const TARGETS={Matin:[.7,1.26],Midi:[.7,1.6],Soir:[.7,1.6],Couche:[.7,1.4],Autre:[.7,1.6]};
-  const getColor=(val,mom)=>{const [lo,hi]=TARGETS[mom]||TARGETS.Autre;if(val<lo||val>hi) return"#ff453a";if(val>hi*.9) return"#ffd60a";return"#30d158";};
+  const getColor=(val,mom)=>{const [lo,hi]=TARGETS[mom]||TARGETS.Autre;if(val<lo||val>hi) return"#ff453a";if(val>hi*.9) return"#ff9f0a";return"#30d158";};
   const handleAdd=()=>{
     const v=parseFloat(form.value.replace(",","."));
     if(isNaN(v)||v<.5||v>4){setErr("Valeur entre 0.5 et 4.0 g/L");return;}
@@ -387,7 +397,7 @@ function GlycemiaScreen({glycLogs,onSave,onBack}){
           </div>
         </div>
         <FIn label="Glycémie (g/L)" value={form.value} onChange={v=>setForm(f=>({...f,value:v}))} placeholder="ex: 1.10" inputMode="decimal"/>
-        <FIn label="Date (si oubli)" value={form.date} onChange={v=>setForm(f=>({...f,date:v}))} type="date"/>
+        <FIn label="Date" value={form.date} onChange={v=>setForm(f=>({...f,date:v}))} type="date"/>
         <FIn label="Note (optionnel)" value={form.note} onChange={v=>setForm(f=>({...f,note:v}))} placeholder="ex: après repas léger"/>
         <InfoBox color="#0a84ff" text={form.moment==="Matin"?"Cible à jeun : 0.70–1.26 g/L (HAS 2024)":"Cible post-prandiale : 0.70–1.60 g/L (HAS 2024)"} icon="🎯"/>
         {err&&<div style={{color:"#ff453a",fontSize:13,fontFamily:t.sm,marginBottom:10}}>{err}</div>}
@@ -418,7 +428,7 @@ function GlycemiaScreen({glycLogs,onSave,onBack}){
           :[...glycLogs].reverse().map(g=><GlycRow key={g.id} g={g} color={getColor(g.value,g.moment)} t={t} showDate/>)
         }
       </div>}
-      <InfoBox color="#ffd60a" text="Ne modifiez jamais votre traitement sans avis médical. Valeurs indicatives." icon="⚠️"/>
+      <InfoBox color="#ff9f0a" text="Ne modifiez jamais votre traitement sans avis médical. Valeurs indicatives." icon="⚠️"/>
     </div>
   );
 }
@@ -757,42 +767,68 @@ function ChatScreen(){
   const t=useTheme();
   const [open,setOpen]=useState(null);
   const items=[
-    {q:"Qu'est-ce que la rétinopathie diabétique ?",a:"La rétinopathie diabétique (RD) est une complication du diabète touchant les vaisseaux rétiniens. Elle évolue silencieusement avant d'affecter la vision — d'où l'importance du dépistage annuel même sans symptôme.",icon:"👁️",color:"#0a84ff"},
-    {q:"À quoi correspond le score ICDR (0 à 4) ?",a:"L'ICDR classe la RD de 0 (aucun signe) à 4 (forme proliférante). Niveau 0–1 : contrôle annuel. Niveau 2 : ophtalmologue sous 6 mois. Niveaux 3–4 : consultation urgente.",icon:"📊",color:"#ff9f0a"},
-    {q:"Quelle est la cible de glycémie ?",a:"HbA1c < 7 %. Glycémie à jeun : 0,70–1,26 g/L. Post-prandiale < 1,60 g/L (recommandations HAS 2024). Un équilibre glycémique strict ralentit la progression de la rétinopathie.",icon:"💉",color:"#30d158"},
-    {q:"Quels sont les traitements disponibles ?",a:"Selon le stade : laser pan-rétinien (PPR) pour stopper la progression, injections intra-vitréennes anti-VEGF (Ranibizumab, Aflibercept) pour l'œdème maculaire, ou vitrectomie en cas de complications sévères.",icon:"💊",color:"#bf5af2"},
-    {q:"À quelle fréquence faire le fond d'œil ?",a:"Fond d'œil annuel obligatoire dès le diagnostic pour le diabète de type 2. Pour le type 1, à partir de 5 ans d'évolution. En cas de grossesse ou HbA1c déséquilibrée : surveillance plus rapprochée.",icon:"📅",color:"#ff375f"},
-    {q:"Comment prévenir la rétinopathie ?",a:"Contrôle glycémique strict (HbA1c < 7 %), pression artérielle < 130/80 mmHg, arrêt du tabac, activité physique régulière et suivi ophtalmologique annuel. La prévention reste le meilleur traitement.",icon:"🛡️",color:"#30d158"},
-    {q:"Mes données sont-elles confidentielles ?",a:"Vos photos ne sont jamais stockées sur un serveur. Seules des métadonnées anonymisées sont conservées avec votre consentement explicite. Base légale : RGPD Art. 9.2.j — recherche médicale. Hébergement EU (Frankfurt).",icon:"🔒",color:"#ffd60a"},
+    {q:"Qu'est-ce que la rétinopathie diabétique ?",short:"Rétinopathie",a:"La rétinopathie diabétique (RD) est une complication du diabète touchant les vaisseaux rétiniens. Elle évolue silencieusement avant d'affecter la vision — d'où l'importance du dépistage annuel même sans symptôme.",icon:"👁️",color:"#0a84ff"},
+    {q:"À quoi correspond le score ICDR (0 à 4) ?",short:"Score ICDR",a:"L'ICDR classe la RD de 0 (aucun signe) à 4 (forme proliférante). Niveau 0–1 : contrôle annuel. Niveau 2 : ophtalmologue sous 6 mois. Niveaux 3–4 : consultation urgente.",icon:"📊",color:"#ff9f0a"},
+    {q:"Quelle est la cible de glycémie ?",short:"Glycémie",a:"HbA1c < 7 %. Glycémie à jeun : 0,70–1,26 g/L. Post-prandiale < 1,60 g/L (recommandations HAS 2024). Un équilibre glycémique strict ralentit la progression de la rétinopathie.",icon:"💉",color:"#30d158"},
+    {q:"Quels sont les traitements disponibles ?",short:"Traitements",a:"Selon le stade : laser pan-rétinien (PPR) pour stopper la progression, injections intra-vitréennes anti-VEGF (Ranibizumab, Aflibercept) pour l'œdème maculaire, ou vitrectomie en cas de complications sévères.",icon:"💊",color:"#bf5af2"},
+    {q:"À quelle fréquence faire le fond d'œil ?",short:"Fréquence",a:"Fond d'œil annuel obligatoire dès le diagnostic pour le diabète de type 2. Pour le type 1, à partir de 5 ans d'évolution. En cas de grossesse ou HbA1c déséquilibrée : surveillance plus rapprochée.",icon:"📅",color:"#ff375f"},
+    {q:"Comment prévenir la rétinopathie ?",short:"Prévention",a:"Contrôle glycémique strict (HbA1c < 7 %), pression artérielle < 130/80 mmHg, arrêt du tabac, activité physique régulière et suivi ophtalmologique annuel. La prévention reste le meilleur traitement.",icon:"🛡️",color:"#34c759"},
+    {q:"Mes données sont-elles confidentielles ?",short:"Confidentialité",a:"Vos photos ne sont jamais stockées sur un serveur. Seules des métadonnées anonymisées sont conservées avec votre consentement explicite. Base légale : RGPD Art. 9.2.j — recherche médicale. Hébergement EU (Frankfurt).",icon:"🔒",color:"#ff9f0a"},
   ];
   return(
     <div style={{padding:"0 16px",background:"transparent",minHeight:"100%",paddingBottom:140}}>
       <div style={{paddingTop:56,paddingBottom:4}}>
         <div style={{color:t.text,fontSize:30,fontWeight:700,letterSpacing:-.8,fontFamily:t.sf}}>Assistant</div>
-        <div style={{color:t.text3,fontSize:13,fontFamily:t.sm,marginTop:2,marginBottom:16}}>Questions fréquentes sur la rétinopathie diabétique</div>
+        <div style={{color:t.text3,fontSize:13,fontFamily:t.sm,marginTop:2,marginBottom:16}}>Appuyez sur un sujet pour en savoir plus</div>
       </div>
-      <Card style={{marginBottom:16,display:"flex",gap:12,alignItems:"center"}}>
+      <Card style={{marginBottom:20,display:"flex",gap:12,alignItems:"center"}}>
         <div style={{width:44,height:44,borderRadius:14,background:"linear-gradient(135deg,#0a84ff,#30d158)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>👁️</div>
         <div>
           <div style={{color:t.text,fontSize:14,fontWeight:600,fontFamily:t.sm}}>RetinaScore — Outil académique</div>
           <div style={{color:t.text3,fontSize:12,fontFamily:t.sm,marginTop:2,lineHeight:1.4}}>Ces informations sont indicatives et ne remplacent pas un avis médical.</div>
         </div>
       </Card>
-      {items.map((item,i)=>(
-        <div key={i} style={{marginBottom:8}}>
-          <button onClick={()=>setOpen(open===i?null:i)} style={{width:"100%",background:open===i?item.color+"18":t.bg2,borderRadius:open===i?"14px 14px 0 0":14,padding:"13px 14px",border:`1px solid ${open===i?item.color+"44":t.border}`,display:"flex",alignItems:"center",gap:12,cursor:"pointer",textAlign:"left"}}>
-            <div style={{width:34,height:34,borderRadius:10,background:item.color+"20",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{item.icon}</div>
-            <div style={{flex:1,color:t.text,fontSize:14,fontWeight:600,fontFamily:t.sm,lineHeight:1.3}}>{item.q}</div>
-            <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={t.text3} strokeWidth={2} strokeLinecap="round" style={{transform:open===i?"rotate(180deg)":"rotate(0deg)",transition:"transform .2s",flexShrink:0}}><path d="M6 9l6 6 6-6"/></svg>
+      {/* Bulles interactives */}
+      <div style={{display:"flex",flexWrap:"wrap",gap:10,marginBottom:20}}>
+        {items.map((item,i)=>(
+          <button key={i} onClick={()=>setOpen(open===i?null:i)}
+            style={{
+              display:"flex",alignItems:"center",gap:8,
+              padding:"10px 18px 10px 12px",
+              borderRadius:50,
+              border:`1.5px solid ${open===i?item.color:t.border}`,
+              background:open===i?(t.isDark?item.color+"30":item.color+"18"):t.glass,
+              backdropFilter:"blur(20px)",
+              WebkitBackdropFilter:"blur(20px)",
+              cursor:"pointer",
+              outline:"none",
+              WebkitTapHighlightColor:"transparent",
+              transition:"all .18s",
+              boxShadow:open===i?`0 4px 14px ${item.color}30`:"none",
+            }}>
+            <span style={{fontSize:18,lineHeight:1}}>{item.icon}</span>
+            <span style={{color:open===i?item.color:t.text,fontSize:14,fontWeight:600,fontFamily:t.sm}}>{item.short}</span>
           </button>
-          {open===i&&(
-            <div style={{background:item.color+"10",borderRadius:"0 0 14px 14px",padding:"12px 14px",border:`1px solid ${item.color+"44"}`,borderTop:"none"}}>
-              <div style={{color:t.text2,fontSize:13,fontFamily:t.sm,lineHeight:1.6}}>{item.a}</div>
-            </div>
-          )}
+        ))}
+      </div>
+      {/* Réponse */}
+      {open!==null&&(
+        <div className="fade-up" style={{
+          background:items[open].color+(t.isDark?"22":"15"),
+          borderRadius:20,
+          padding:"16px",
+          border:`1.5px solid ${items[open].color}44`,
+          marginBottom:16,
+          boxShadow:`0 6px 24px ${items[open].color}18`,
+        }}>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+            <div style={{width:38,height:38,borderRadius:12,background:items[open].color+"28",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>{items[open].icon}</div>
+            <div style={{color:t.text,fontSize:14,fontWeight:700,fontFamily:t.sm,flex:1,lineHeight:1.3}}>{items[open].q}</div>
+          </div>
+          <div style={{color:t.text2,fontSize:13,fontFamily:t.sm,lineHeight:1.65}}>{items[open].a}</div>
         </div>
-      ))}
-      <div style={{color:t.text4,fontSize:10,fontFamily:t.sm,textAlign:"center",marginTop:16}}>Pas un avis médical · Sources : HAS 2024 · SFO</div>
+      )}
+      <div style={{color:t.text4,fontSize:10,fontFamily:t.sm,textAlign:"center",marginTop:8}}>Pas un avis médical · Sources : HAS 2024 · SFO</div>
     </div>
   );
 }
