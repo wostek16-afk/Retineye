@@ -487,13 +487,11 @@ function ScanScreen({user,onDone}){
   const analyze=async()=>{
     setStep("analyzing");setErr("");const t0=Date.now();
     try{
-      let parsed;
-      try{ parsed=await analyzeLocal(); }
-      catch{ parsed=await analyzeViaClaude(); }
+      const parsed=await analyzeLocal();
       setElapsed(((Date.now()-t0)/1000).toFixed(1));
       setRes(parsed);setStep("result");
     }catch(e){
-      setErr("Analyse impossible. Vérifiez la connexion au serveur.");
+      setErr("Analyse impossible. Vérifiez que le serveur avec best_model_v2 est en ligne.");
       setStep("preview");
     }
   };
