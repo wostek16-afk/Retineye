@@ -487,11 +487,16 @@ function ScanScreen({user,onDone}){
   const analyze=async()=>{
     setStep("analyzing");setErr("");const t0=Date.now();
     try{
-      const parsed=await analyzeLocal();
+      let parsed;
+      try{ parsed=await analyzeLocal(); }
+      catch{ parsed=await analyzeViaClaude(); }
       setElapsed(((Date.now()-t0)/1000).toFixed(1));
       setRes(parsed);setStep("result");
     }catch(e){
-      setErr("Analyse impossible. Vérifiez que le serveur avec best_model_v2 est en ligne.");
+      const hasKey=!!DB.get("claudeApiKey","");
+      setErr(hasKey
+        ?"Analyse impossible. Vérifiez votre connexion et la clé API Claude dans Réglages."
+        :"Analyse impossible. Configurez une clé API Claude dans Réglages, ou vérifiez que le serveur Railway est en ligne.");
       setStep("preview");
     }
   };
