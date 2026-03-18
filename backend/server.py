@@ -139,8 +139,9 @@ def _load_model_sync():
                 hf_token = os.environ.get("HF_TOKEN", "")
                 if hf_token:
                     req_hf = urllib.request.Request(model_url, headers={"Authorization": f"Bearer {hf_token}"})
-                    with urllib.request.urlopen(req_hf) as resp, open(MODEL_PATH, "wb") as f:
-                        f.write(resp.read())
+                    with urllib.request.urlopen(req_hf, timeout=300) as resp, open(MODEL_PATH, "wb") as f:
+                        while chunk := resp.read(8 * 1024 * 1024):
+                            f.write(chunk)
                 else:
                     urllib.request.urlretrieve(model_url, MODEL_PATH)
                 print(f"✅ Modèle téléchargé dans {MODEL_PATH}")
