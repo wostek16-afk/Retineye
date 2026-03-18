@@ -2,7 +2,7 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-COPY requirements.txt .
+COPY backend/requirements.txt .
 
 RUN pip install --no-cache-dir \
     torch==2.2.2+cpu \
@@ -18,6 +18,6 @@ RUN pip install --no-cache-dir \
     timm>=0.9.0 \
     requests>=2.32.0
 
-COPY . .
+COPY backend/ .
 
 CMD uvicorn server:app --host 0.0.0.0 --port $PORT
