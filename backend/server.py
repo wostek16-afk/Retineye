@@ -126,7 +126,13 @@ def load_model():
             print(f"⬇️  Téléchargement du modèle depuis MODEL_URL…")
             try:
                 import urllib.request
-                urllib.request.urlretrieve(model_url, MODEL_PATH)
+                hf_token = os.environ.get("HF_TOKEN", "")
+                if hf_token:
+                    req_hf = urllib.request.Request(model_url, headers={"Authorization": f"Bearer {hf_token}"})
+                    with urllib.request.urlopen(req_hf) as resp, open(MODEL_PATH, "wb") as f:
+                        f.write(resp.read())
+                else:
+                    urllib.request.urlretrieve(model_url, MODEL_PATH)
                 print(f"✅ Modèle téléchargé dans {MODEL_PATH}")
             except Exception as e:
                 print(f"❌ Erreur téléchargement modèle : {e}")
