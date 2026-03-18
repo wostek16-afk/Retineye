@@ -453,7 +453,7 @@ function ScanScreen({user,onDone}){
   };
   const getBase=()=>{
     const stored=DB.get("backendUrl","").trim();
-    return stored||import.meta.env.VITE_BACKEND_URL||"http://localhost:8000";
+    return stored||import.meta.env.VITE_BACKEND_URL||"https://retineye-production.up.railway.app";
   };
   const analyzeLocal=async()=>{
     const resp=await fetch(`${getBase()}/analyze`,{
