@@ -60,24 +60,25 @@ function Ring({size=130,sw=12,progress=0,color,delay=0}){
   const r=(size-sw)/2, circ=2*Math.PI*r;
   const [go,setGo]=useState(false);
   useEffect(()=>{const tid=setTimeout(()=>setGo(true),delay+80);return()=>clearTimeout(tid);},[delay]);
-  const offset=circ*(1-Math.min(Math.max(progress,0),1));
+  const eff=progress>0?Math.max(0.05,Math.min(progress,1)):0;
+  const offset=circ*(1-eff);
   return(
-    <svg width={size} height={size} style={{transform:"rotate(-90deg)",display:"block"}}>
+    <svg width={size} height={size} overflow="visible" style={{transform:"rotate(-90deg)",display:"block"}}>
       <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color+"28"} strokeWidth={sw}/>
       <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={sw}
         strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={go?offset:circ}
-        style={{transition:`stroke-dashoffset 1.2s cubic-bezier(.4,0,.2,1) ${delay}ms`,filter:`drop-shadow(0 0 5px ${color}99)`}}/>
+        style={{transition:`stroke-dashoffset 1.4s cubic-bezier(.4,0,.2,1) ${delay}ms`,filter:`drop-shadow(0 0 6px ${color}bb)`}}/>
     </svg>
   );
 }
 
 function TripleRings({rings,size=150}){
-  const sw=13,gap=5;
+  const sw=11,gap=6;
   return(
-    <div style={{position:"relative",width:size,height:size,flexShrink:0}}>
+    <div style={{position:"relative",width:size,height:size,flexShrink:0,overflow:"visible"}}>
       {rings.map((r,i)=>{
         const s=size-i*(sw+gap)*2, off=i*(sw+gap);
-        return <div key={i} style={{position:"absolute",top:off,left:off}}><Ring size={s} sw={sw} progress={r.prog} color={r.color} delay={i*150}/></div>;
+        return <div key={i} style={{position:"absolute",top:off,left:off,overflow:"visible"}}><Ring size={s} sw={sw} progress={r.prog} color={r.color} delay={i*200}/></div>;
       })}
     </div>
   );
@@ -158,7 +159,6 @@ function Spark({values,color}){
 // ── Tab Bar ────────────────────────────────────────────────────
 function TabBar({tab,set}){
   const t=useTheme();
-  const [pressed,setPressed]=useState(null);
   const tColor={home:"#30d158",scan:"#0a84ff",history:"#ff9f0a",chat:"#ff9f0a",profile:"#8e8e93"};
   const tabs=[{id:"home",label:"Résumé"},{id:"scan",label:"Dépistage"},{id:"history",label:"Historique"},{id:"chat",label:"Assistant"},{id:"profile",label:"Profil"}];
   const icons={
@@ -171,43 +171,25 @@ function TabBar({tab,set}){
   return(
     <div style={{
       position:"fixed",bottom:0,left:0,right:0,zIndex:999,
-      background:t.isDark?"rgba(8,8,12,0.72)":"rgba(248,248,252,0.78)",
-      backdropFilter:"blur(32px) saturate(2.2)",
-      WebkitBackdropFilter:"blur(32px) saturate(2.2)",
-      borderTop:`1px solid ${t.glassBorder}`,
-      boxShadow:t.isDark?"0 -1px 0 rgba(255,255,255,0.06),0 -8px 24px rgba(0,0,0,0.3)":"0 -1px 0 rgba(0,0,0,0.05),0 -8px 24px rgba(0,0,0,0.06)",
+      background:t.isDark?"#1c1c1e":"#f2f2f7",
+      borderTop:`1px solid ${t.border}`,
       paddingBottom:"env(safe-area-inset-bottom, 0px)",
     }}>
       <div style={{display:"flex",maxWidth:430,margin:"0 auto"}}>
         {tabs.map(tb=>{
           const active=tab===tb.id;
           const color=tColor[tb.id];
-          const isPressed=pressed===tb.id;
           return(
-            <button key={tb.id}
-              onPointerDown={()=>setPressed(tb.id)}
-              onPointerUp={()=>{setPressed(null);set(tb.id);}}
-              onPointerLeave={()=>setPressed(null)}
+            <button key={tb.id} onClick={()=>set(tb.id)}
               style={{flex:1,border:"none",background:"transparent",cursor:"pointer",
                 display:"flex",flexDirection:"column",alignItems:"center",gap:2,
                 padding:"8px 0 10px",WebkitTapHighlightColor:"transparent",outline:"none",
-                transform:isPressed?"scale(0.85)":"scale(1)",
-                transition:"transform 0.1s ease",
               }}
             >
-              <div style={{
-                color:active?color:t.text4,
-                display:"flex",alignItems:"center",justifyContent:"center",
-                marginBottom:1,
-              }}>
+              <div style={{color:active?color:t.text4,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:1}}>
                 {icons[tb.id]}
               </div>
-              <span style={{
-                fontSize:10,fontFamily:t.sm,
-                color:active?color:t.text4,
-                fontWeight:active?600:400,
-              }}>{tb.label}</span>
-              {active&&<div style={{width:16,height:2,borderRadius:1,background:color,marginTop:2}}/>}
+              <span style={{fontSize:10,fontFamily:t.sm,color:active?color:t.text4,fontWeight:active?600:400}}>{tb.label}</span>
             </button>
           );
         })}
@@ -218,7 +200,7 @@ function TabBar({tab,set}){
 
 
 // ── HOME ──────────────────────────────────────────────────────
-function HomeScreen({user,scans,glycLogs,onNavigate,onGoGlyc,onGoVision,onGoRDV}){
+function HomeScreen({user,scans,glycLogs,onNavigate,onGoGlyc,onGoVision,onGoRDV,onGoScan}){
   const t=useTheme();
   const now=new Date();
   const h=now.getHours();
@@ -287,7 +269,6 @@ function HomeScreen({user,scans,glycLogs,onNavigate,onGoGlyc,onGoVision,onGoRDV}
               <div style={{color:t.text3,fontSize:12,fontFamily:t.sm}}>{new Date(last.date).toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"})}</div>
             </div>
           </div>
-          <div style={{display:"flex",gap:3,marginBottom:9}}>{ICDR.map((_,i)=><div key={i} style={{flex:1,height:4,borderRadius:2,background:i<=lastLevel?ICDR[lastLevel].color:t.bg4}}/>)}</div>
           <div style={{color:t.text2,fontSize:13,fontFamily:t.sm,lineHeight:1.55}}>{ICDR[lastLevel].advice}</div>
           {lastLevel>=3&&<a href="https://www.doctolib.fr/ophtalmologue" target="_blank" rel="noopener noreferrer" style={{display:"block",textDecoration:"none",width:"100%",marginTop:10,padding:"11px 0",borderRadius:12,border:"none",background:"#ff453a",color:"#fff",fontSize:14,fontWeight:700,fontFamily:t.sm,textAlign:"center"}}>🏥 Prendre RDV ophtalmologue →</a>}
         </div>
@@ -309,7 +290,7 @@ function HomeScreen({user,scans,glycLogs,onNavigate,onGoGlyc,onGoVision,onGoRDV}
       </Card>
       {/* Quick stats grid */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginTop:12}} className="fade-up-3">
-        {[["📊","Analyses",String(scans.length),"total","#ff375f",null],["👓","Acuité",lastVision||"—","Snellen","#0a84ff",onGoVision],["💉","Mesures",String(glycLogs.length),"glycémie","#30d158",onGoGlyc],["📅","Prochain FO",daysUntil!=null?daysUntil+"j":"—","fond d'œil","#ffd60a",onGoRDV]].map(([ico,lbl,val,sub,color,action])=>(
+        {[["📊","Analyses",String(scans.length),"total","#ff375f",onGoScan],["👓","Acuité",lastVision||"—","Snellen","#0a84ff",onGoVision],["💉","Mesures",String(glycLogs.length),"glycémie","#30d158",onGoGlyc],["📅","Prochain FO",daysUntil!=null?daysUntil+"j":"—","fond d'œil","#ffd60a",onGoRDV]].map(([ico,lbl,val,sub,color,action])=>(
           <Card key={lbl} style={{padding:"12px 13px",cursor:action?"pointer":"default"}} onClick={action||undefined}>
             <div style={{fontSize:20,marginBottom:5}}>{ico}</div>
             <div style={{color:t.text3,fontSize:10,fontFamily:t.sm,marginBottom:1}}>{lbl}</div>
@@ -587,9 +568,11 @@ function ScanScreen({user,onDone}){
 function HistoryScreen({scans,glycLogs,onScanDetail}){
   const t=useTheme();
   const [filter,setFilter]=useState("all");
+  const visionLogs=DB.get("vision_history",[]);
   const all=[
     ...scans.map(s=>({...s,_k:"retina"})),
     ...glycLogs.map(g=>({...g,_k:"glyc",date:g.date+"T"+(g.time||"00:00")})),
+    ...visionLogs.map(v=>({...v,_k:"vision"})),
   ].sort((a,b)=>new Date(b.date)-new Date(a.date));
   const shown=filter==="all"?all:all.filter(i=>i._k===filter);
   return(
@@ -599,8 +582,8 @@ function HistoryScreen({scans,glycLogs,onScanDetail}){
         <div style={{color:t.text3,fontSize:13,fontFamily:t.sm,marginTop:2,marginBottom:14}}>{all.length} entrée{all.length!==1?"s":""}</div>
       </div>
       <div style={{display:"flex",background:t.bg2,borderRadius:12,padding:3,marginBottom:14,border:`1px solid ${t.border}`}}>
-        {[["all","Tout"],["retina","Rétine"],["glyc","Glycémie"]].map(([v,l])=>(
-          <button key={v} onClick={()=>setFilter(v)} style={{flex:1,padding:"8px 0",borderRadius:10,border:"none",cursor:"pointer",fontSize:13,fontWeight:600,background:filter===v?t.bg4:"transparent",color:filter===v?t.text:t.text3,fontFamily:t.sm,transition:"all .18s"}}>{l}</button>
+        {[["all","Tout"],["retina","Rétine"],["glyc","Glycémie"],["vision","Acuité"]].map(([v,l])=>(
+          <button key={v} onClick={()=>setFilter(v)} style={{flex:1,padding:"8px 0",borderRadius:10,border:"none",cursor:"pointer",fontSize:12,fontWeight:600,background:filter===v?t.bg4:"transparent",color:filter===v?t.text:t.text3,fontFamily:t.sm,transition:"all .18s"}}>{l}</button>
         ))}
       </div>
       {shown.length===0
@@ -620,6 +603,19 @@ function HistoryScreen({scans,glycLogs,onScanDetail}){
                 <div style={{background:info.bg,borderRadius:20,padding:"3px 10px",border:`1px solid ${info.color}33`,flexShrink:0}}>
                   <span style={{color:info.color,fontSize:11,fontWeight:700,fontFamily:t.sm}}>N{item.icdr_level}</span>
                 </div>
+              </div>
+            );
+          }
+          if(item._k==="vision"){
+            const col=item.best&&parseFloat(item.best)>=0.8?"#30d158":item.best&&parseFloat(item.best)>=0.5?"#ffd60a":"#ff453a";
+            return(
+              <div key={item.id} style={{background:t.bg2,borderRadius:14,padding:"11px 13px",marginBottom:8,border:`1px solid ${t.border}`,display:"flex",alignItems:"center",gap:11}}>
+                <div style={{width:44,height:44,borderRadius:11,background:"rgba(10,132,255,0.1)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:18}}>👓</div>
+                <div style={{flex:1}}>
+                  <div style={{color:t.text,fontSize:14,fontWeight:600,fontFamily:t.sm}}>Acuité {item.testType==="snellen"?"Snellen":"Parinaud"}</div>
+                  <div style={{color:t.text3,fontSize:11,fontFamily:t.sm,marginTop:1}}>{new Date(item.date).toLocaleDateString("fr-FR",{day:"numeric",month:"short",year:"numeric"})} · OD {item.OD} · OG {item.OG}</div>
+                </div>
+                {item.best&&<div><span style={{color:col,fontSize:17,fontWeight:700,fontFamily:t.sf}}>{item.best}</span><span style={{color:t.text4,fontSize:11}}>/10</span></div>}
               </div>
             );
           }
@@ -666,7 +662,18 @@ function VisionScreen({onBack}){
   };
   const nextEyeOrResult=(nd)=>{
     if(eye==="OD"){setEye("OG");setLine(0);}
-    else{if(testType==="snellen"){const best=Math.max(parseFloat(nd.OD)||0,parseFloat(nd.OG)||0);DB.set("last_vision",String(best));}setPhase("result");}
+    else{
+      if(testType==="snellen"){
+        const best=Math.max(parseFloat(nd.OD)||0,parseFloat(nd.OG)||0);
+        DB.set("last_vision",String(best));
+        const hist=DB.get("vision_history",[]);
+        DB.set("vision_history",[{id:Date.now().toString(),date:new Date().toISOString(),testType,OD:nd.OD,OG:nd.OG,best:String(best)},...hist].slice(0,50));
+      } else {
+        const hist=DB.get("vision_history",[]);
+        DB.set("vision_history",[{id:Date.now().toString(),date:new Date().toISOString(),testType,OD:nd.OD,OG:nd.OG,best:null},...hist].slice(0,50));
+      }
+      setPhase("result");
+    }
   };
   const reset=()=>{setPhase("intro");setLine(0);setEye("OD");setDone({OD:null,OG:null});};
   const switchTest=(type)=>{setTestType(type);reset();};
@@ -745,103 +752,47 @@ function VisionScreen({onBack}){
 }
 
 
-// ── CHAT ──────────────────────────────────────────────────────
+// ── ASSISTANT ─────────────────────────────────────────────────
 function ChatScreen(){
   const t=useTheme();
-  const [msgs,setMsgs]=useState([{role:"assistant",text:"Bonjour 👁️\n\nJe suis l'assistant RetinaScore. Posez-moi vos questions sur la rétinopathie diabétique, la glycémie, l'acuité visuelle ou l'application.\n\nComment puis-je vous aider ?"}]);
-  const [input,setInput]=useState("");
-  const [loading,setLoading]=useState(false);
-  const endRef=useRef();
-  useEffect(()=>{endRef.current?.scrollIntoView({behavior:"smooth"});},[msgs,loading]);
-  const matchFAQ=q=>{
-    const norm=s=>s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
-    const low=norm(q);
-    return FAQ.find(f=>f.keys.some(k=>low.includes(norm(k))))||null;
-  };
-  const send=async(override)=>{
-    const text=(override||input).trim();
-    if(!text||loading) return;
-    setInput("");
-    const nm=[...msgs,{role:"user",text}];
-    setMsgs(nm);setLoading(true);
-    const faq=matchFAQ(text);
-    if(faq){await new Promise(r=>setTimeout(r,380));setMsgs(m=>[...m,{role:"assistant",text:faq.a,faq:true}]);setLoading(false);return;}
-    try{
-      const SYS="Tu es l'assistant medical de RetinaScore. Reponds en francais, 2-3 phrases, bienveillant et precis. Rappelle que tu ne remplaces pas un medecin.";
-      const hist=nm.slice(-8).map(m=>({role:m.role==="assistant"?"assistant":"user",content:m.text}));
-      const key=DB.get("claudeApiKey","");
-      const body={model:"claude-sonnet-4-20250514",max_tokens:280,system:SYS,messages:hist};
-      const resp=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json",...(key?{"x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"}:{})},body:JSON.stringify(body)});
-      const data=await resp.json();
-      const reply=(data.content||[]).map(b=>b.text||"").join("")||"Aucune réponse.";
-      setMsgs(m=>[...m,{role:"assistant",text:reply}]);
-    }catch{
-      setMsgs(m=>[...m,{role:"assistant",text:"Je ne peux pas répondre pour l'instant. Vérifiez votre connexion."}]);
-    }
-    setLoading(false);
-  };
-  const suggestions=["Qu'est-ce que la RD ?","Score ICDR ?","Glycémie cible ?","Traitements disponibles ?"];
+  const [open,setOpen]=useState(null);
+  const items=[
+    {q:"Qu'est-ce que la rétinopathie diabétique ?",a:"La rétinopathie diabétique (RD) est une complication du diabète touchant les vaisseaux rétiniens. Elle évolue silencieusement avant d'affecter la vision — d'où l'importance du dépistage annuel même sans symptôme.",icon:"👁️",color:"#0a84ff"},
+    {q:"À quoi correspond le score ICDR (0 à 4) ?",a:"L'ICDR classe la RD de 0 (aucun signe) à 4 (forme proliférante). Niveau 0–1 : contrôle annuel. Niveau 2 : ophtalmologue sous 6 mois. Niveaux 3–4 : consultation urgente.",icon:"📊",color:"#ff9f0a"},
+    {q:"Quelle est la cible de glycémie ?",a:"HbA1c < 7 %. Glycémie à jeun : 0,70–1,26 g/L. Post-prandiale < 1,60 g/L (recommandations HAS 2024). Un équilibre glycémique strict ralentit la progression de la rétinopathie.",icon:"💉",color:"#30d158"},
+    {q:"Quels sont les traitements disponibles ?",a:"Selon le stade : laser pan-rétinien (PPR) pour stopper la progression, injections intra-vitréennes anti-VEGF (Ranibizumab, Aflibercept) pour l'œdème maculaire, ou vitrectomie en cas de complications sévères.",icon:"💊",color:"#bf5af2"},
+    {q:"À quelle fréquence faire le fond d'œil ?",a:"Fond d'œil annuel obligatoire dès le diagnostic pour le diabète de type 2. Pour le type 1, à partir de 5 ans d'évolution. En cas de grossesse ou HbA1c déséquilibrée : surveillance plus rapprochée.",icon:"📅",color:"#ff375f"},
+    {q:"Comment prévenir la rétinopathie ?",a:"Contrôle glycémique strict (HbA1c < 7 %), pression artérielle < 130/80 mmHg, arrêt du tabac, activité physique régulière et suivi ophtalmologique annuel. La prévention reste le meilleur traitement.",icon:"🛡️",color:"#30d158"},
+    {q:"Mes données sont-elles confidentielles ?",a:"Vos photos ne sont jamais stockées sur un serveur. Seules des métadonnées anonymisées sont conservées avec votre consentement explicite. Base légale : RGPD Art. 9.2.j — recherche médicale. Hébergement EU (Frankfurt).",icon:"🔒",color:"#ffd60a"},
+  ];
   return(
-    <div style={{display:"flex",flexDirection:"column",height:"100%",background:"transparent"}}>
-      {/* Header with glass effect */}
-      <div style={{
-        padding:"56px 16px 12px",
-        borderBottom:`1px solid ${t.border}`,
-        flexShrink:0,
-        background:t.isDark?"rgba(0,0,0,0.9)":"rgba(242,242,247,0.9)",
-        backdropFilter:"blur(20px)",
-        WebkitBackdropFilter:"blur(20px)",
-      }}>
-        <div style={{display:"flex",alignItems:"center",gap:12}}>
-          <div style={{width:44,height:44,borderRadius:14,background:"linear-gradient(135deg,#ff9f0a,#ff375f)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>🤖</div>
-          <div>
-            <div style={{color:t.text,fontSize:17,fontWeight:700,fontFamily:t.sf}}>Assistant RetinaScore</div>
-            <div style={{display:"flex",alignItems:"center",gap:5,marginTop:2}}>
-              <div style={{width:6,height:6,borderRadius:"50%",background:"#30d158",animation:"pulse 2s infinite"}}/>
-              <span style={{color:"#30d158",fontSize:12,fontFamily:t.sm}}>En ligne</span>
-            </div>
-          </div>
+    <div style={{padding:"0 16px",background:"transparent",minHeight:"100%",paddingBottom:140}}>
+      <div style={{paddingTop:56,paddingBottom:4}}>
+        <div style={{color:t.text,fontSize:30,fontWeight:700,letterSpacing:-.8,fontFamily:t.sf}}>Assistant</div>
+        <div style={{color:t.text3,fontSize:13,fontFamily:t.sm,marginTop:2,marginBottom:16}}>Questions fréquentes sur la rétinopathie diabétique</div>
+      </div>
+      <Card style={{marginBottom:16,display:"flex",gap:12,alignItems:"center"}}>
+        <div style={{width:44,height:44,borderRadius:14,background:"linear-gradient(135deg,#0a84ff,#30d158)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>👁️</div>
+        <div>
+          <div style={{color:t.text,fontSize:14,fontWeight:600,fontFamily:t.sm}}>RetinaScore — Outil académique</div>
+          <div style={{color:t.text3,fontSize:12,fontFamily:t.sm,marginTop:2,lineHeight:1.4}}>Ces informations sont indicatives et ne remplacent pas un avis médical.</div>
         </div>
-      </div>
-      {/* Messages */}
-      <div style={{flex:1,overflowY:"auto",padding:"12px 14px 0"}}>
-        {msgs.map((m,i)=>(
-          <div key={i} style={{display:"flex",justifyContent:m.role==="user"?"flex-end":"flex-start",marginBottom:9}}>
-            {m.role==="assistant"&&<div style={{width:28,height:28,borderRadius:"50%",background:"linear-gradient(135deg,#ff9f0a,#ff375f)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,marginRight:6,flexShrink:0,marginTop:2}}>🤖</div>}
-            <div style={{maxWidth:"78%",background:m.role==="user"?"#0a84ff":t.bg2,borderRadius:m.role==="user"?"17px 17px 4px 17px":"17px 17px 17px 4px",padding:"10px 13px",border:m.role==="assistant"?`1px solid ${t.border}`:"none"}}>
-              {m.faq&&<div style={{color:"#ffd60a",fontSize:9,fontWeight:700,textTransform:"uppercase",letterSpacing:.8,fontFamily:t.sm,marginBottom:4}}>FAQ ✦</div>}
-              <div style={{color:m.role==="user"?"#fff":t.text,fontSize:14,fontFamily:t.sm,lineHeight:1.55,whiteSpace:"pre-line"}}>{m.text}</div>
-            </div>
-          </div>
-        ))}
-        {loading&&(
-          <div style={{display:"flex",gap:7,marginBottom:9}}>
-            <div style={{width:28,height:28,borderRadius:"50%",background:"linear-gradient(135deg,#ff9f0a,#ff375f)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13}}>🤖</div>
-            <div style={{background:t.bg2,borderRadius:"17px 17px 17px 4px",padding:"11px 14px",border:`1px solid ${t.border}`,display:"flex",gap:5,alignItems:"center"}}>
-              {[0,1,2].map(i=><div key={i} style={{width:6,height:6,borderRadius:"50%",background:t.text3,animation:`pulse 1.1s ${i*.18}s infinite`}}/>)}
-            </div>
-          </div>
-        )}
-        {msgs.length===1&&!loading&&(
-          <div style={{display:"flex",flexWrap:"wrap",gap:7,marginBottom:12}}>
-            {suggestions.map(s=><button key={s} onClick={()=>send(s)} style={{background:t.bg2,border:`1px solid ${t.border}`,borderRadius:20,padding:"7px 12px",color:"#0a84ff",fontSize:13,fontFamily:t.sm,cursor:"pointer"}}>{s}</button>)}
-          </div>
-        )}
-        <div ref={endRef}/>
-      </div>
-      <div style={{color:t.text4,fontSize:10,fontFamily:t.sm,textAlign:"center",padding:"4px 0"}}>Messages non conservés · Pas un avis médical</div>
-      {/* Input bar — sits above tab bar */}
-      <div style={{padding:"8px 12px",paddingBottom:"calc(env(safe-area-inset-bottom, 0px) + 100px)",background:t.isDark?"rgba(0,0,0,0.5)":"rgba(248,248,252,0.6)",backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",flexShrink:0}}>
-        <div style={{display:"flex",gap:8,alignItems:"center",background:t.bg2,borderRadius:24,padding:"6px 6px 6px 15px",border:`1px solid ${t.border}`}}>
-          <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}}}
-            placeholder="Posez votre question…"
-            style={{flex:1,background:"transparent",border:"none",color:t.text,fontSize:15,fontFamily:t.sm,outline:"none",minWidth:0,padding:"3px 0"}}/>
-          <button onClick={()=>send()} disabled={!input.trim()||loading}
-            style={{width:36,height:36,borderRadius:"50%",border:"none",background:input.trim()&&!loading?"#0a84ff":t.bg3,display:"flex",alignItems:"center",justifyContent:"center",cursor:input.trim()&&!loading?"pointer":"default",transition:"background .18s",flexShrink:0}}>
-            <svg width={14} height={14} viewBox="0 0 24 24" fill="white"><path d="M22 2L11 13"/><path d="M22 2L15 22l-4-9-9-4z" fill="white"/></svg>
+      </Card>
+      {items.map((item,i)=>(
+        <div key={i} style={{marginBottom:8}}>
+          <button onClick={()=>setOpen(open===i?null:i)} style={{width:"100%",background:open===i?item.color+"18":t.bg2,borderRadius:open===i?"14px 14px 0 0":14,padding:"13px 14px",border:`1px solid ${open===i?item.color+"44":t.border}`,display:"flex",alignItems:"center",gap:12,cursor:"pointer",textAlign:"left"}}>
+            <div style={{width:34,height:34,borderRadius:10,background:item.color+"20",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{item.icon}</div>
+            <div style={{flex:1,color:t.text,fontSize:14,fontWeight:600,fontFamily:t.sm,lineHeight:1.3}}>{item.q}</div>
+            <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={t.text3} strokeWidth={2} strokeLinecap="round" style={{transform:open===i?"rotate(180deg)":"rotate(0deg)",transition:"transform .2s",flexShrink:0}}><path d="M6 9l6 6 6-6"/></svg>
           </button>
+          {open===i&&(
+            <div style={{background:item.color+"10",borderRadius:"0 0 14px 14px",padding:"12px 14px",border:`1px solid ${item.color+"44"}`,borderTop:"none"}}>
+              <div style={{color:t.text2,fontSize:13,fontFamily:t.sm,lineHeight:1.6}}>{item.a}</div>
+            </div>
+          )}
         </div>
-      </div>
+      ))}
+      <div style={{color:t.text4,fontSize:10,fontFamily:t.sm,textAlign:"center",marginTop:16}}>Pas un avis médical · Sources : HAS 2024 · SFO</div>
     </div>
   );
 }
@@ -864,7 +815,6 @@ function ProfileScreen({user,scans,onDelete,onLogout,onShowAuth,onUpdateConsent,
               <div style={{color:t.text3,fontSize:12,fontFamily:t.sm}}>{new Date(detail.date).toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"})}</div>
             </div>
           </div>
-          <div style={{display:"flex",gap:3,marginBottom:9}}>{ICDR.map((_,i)=><div key={i} style={{flex:1,height:4,borderRadius:2,background:i<=detail.icdr_level?info.color:t.bg4}}/>)}</div>
           <div style={{color:t.text2,fontSize:13,fontFamily:t.sm,lineHeight:1.55}}>{info.advice}</div>
         </div>
         {detail.findings?.length>0&&<Card style={{marginBottom:12}}>
@@ -946,9 +896,6 @@ function ProfileScreen({user,scans,onDelete,onLogout,onShowAuth,onUpdateConsent,
 // ── SETTINGS ──────────────────────────────────────────────────
 function SettingsScreen({onBack,darkMode,setDarkMode}){
   const t=useTheme();
-  const [apiKey,setApiKey]=useState(DB.get("claudeApiKey",""));
-  const [saved,setSaved]=useState(false);
-  const saveKey=()=>{DB.set("claudeApiKey",apiKey.trim());setSaved(true);setTimeout(()=>setSaved(false),2000);};
   return(
     <div style={{padding:"0 16px",background:"transparent",minHeight:"100%",paddingBottom:140}}>
       <div style={{paddingTop:56,paddingBottom:4}}>
@@ -965,42 +912,6 @@ function SettingsScreen({onBack,darkMode,setDarkMode}){
           <div onClick={()=>setDarkMode(!darkMode)} style={{width:50,height:30,borderRadius:15,background:darkMode?"#30d158":"rgba(120,120,128,0.32)",cursor:"pointer",position:"relative",transition:"background .25s",flexShrink:0}}>
             <div style={{width:26,height:26,borderRadius:"50%",background:"#fff",position:"absolute",top:2,left:darkMode?22:2,transition:"left .25s",boxShadow:"0 2px 6px rgba(0,0,0,0.25)"}}/>
           </div>
-        </div>
-      </Card>
-      <SecTitle>IA & Backend</SecTitle>
-      <Card style={{marginBottom:12}}>
-        <div style={{display:"flex",gap:12,marginBottom:12,alignItems:"flex-start"}}>
-          <div style={{width:34,height:34,borderRadius:10,background:"rgba(191,90,242,0.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>🤖</div>
-          <div>
-            <div style={{color:t.text,fontSize:14,fontWeight:600,fontFamily:t.sm}}>Clé API Claude (Anthropic)</div>
-            <div style={{color:t.text3,fontSize:12,fontFamily:t.sm,marginTop:2,lineHeight:1.5}}>Utilisée en fallback si le modèle local est indisponible. Obtenez votre clé sur <span style={{color:"#bf5af2",fontWeight:600}}>console.anthropic.com</span></div>
-          </div>
-        </div>
-        <div style={{display:"flex",gap:8}}>
-          <input
-            value={apiKey}
-            onChange={e=>setApiKey(e.target.value)}
-            placeholder="sk-ant-..."
-            type="password"
-            style={{flex:1,background:t.bg3,border:`1px solid ${apiKey?"#bf5af2":t.bg4}`,borderRadius:10,padding:"10px 12px",color:t.text,fontSize:13,fontFamily:"'Courier New',monospace",outline:"none"}}
-          />
-          <button onClick={saveKey} style={{padding:"10px 16px",borderRadius:10,border:"none",background:saved?"#30d158":"#bf5af2",color:"#fff",fontFamily:t.sm,fontSize:13,fontWeight:700,cursor:"pointer",transition:"background .25s",whiteSpace:"nowrap"}}>
-            {saved?"✓ OK":"Sauver"}
-          </button>
-        </div>
-        {apiKey&&<div style={{color:"#30d158",fontSize:11,fontFamily:t.sm,marginTop:7}}>✓ Clé configurée — l'analyse basculera sur Claude si le backend local est hors ligne.</div>}
-      </Card>
-      <Card style={{marginBottom:12}}>
-        <div style={{display:"flex",gap:12,marginBottom:12,alignItems:"flex-start"}}>
-          <div style={{width:34,height:34,borderRadius:10,background:"rgba(10,132,255,0.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>🧠</div>
-          <div>
-            <div style={{color:t.text,fontSize:14,fontWeight:600,fontFamily:t.sm}}>Modèle local (optionnel)</div>
-            <div style={{color:t.text3,fontSize:12,fontFamily:t.sm,marginTop:2,lineHeight:1.5}}>Analyse via <span style={{color:"#0a84ff",fontWeight:600}}>best_model_v2.pth</span> — prioritaire si le backend tourne.</div>
-          </div>
-        </div>
-        <div style={{background:"rgba(10,132,255,0.08)",borderRadius:12,padding:"10px 13px",border:"1px solid rgba(10,132,255,0.2)"}}>
-          <div style={{color:t.text3,fontSize:10,fontFamily:t.sm,marginBottom:6,fontWeight:700,textTransform:"uppercase",letterSpacing:.6}}>Démarrer le backend</div>
-          <div style={{color:"#0a84ff",fontSize:12,fontFamily:"'Courier New',monospace",letterSpacing:.2,lineHeight:1.8,whiteSpace:"pre"}}>{"cd backend\npip install -r requirements.txt\nuvicorn server:app --host 0.0.0.0 --port 8000"}</div>
         </div>
       </Card>
       <SecTitle>Données & Confidentialité</SecTitle>
@@ -1272,7 +1183,7 @@ function ConsentScreen({onAccept,onDecline}){
 
 // ── APP ROOT ──────────────────────────────────────────────────
 export default function App(){
-  const [darkMode,setDarkMode]=useState(true); // default dark, like Apple Activity
+  const [darkMode,setDarkMode]=useState(false); // default light
   const t=darkMode?DARK:LIGHT;
 
   const [screen,setScreen]=useState("landing");
@@ -1342,7 +1253,7 @@ export default function App(){
     if(subScreen==="vision") return <VisionScreen onBack={()=>setSubScreen(null)}/>;
     if(subScreen==="rdv") return <RDVScreen onBack={()=>setSubScreen(null)}/>;
     switch(tab){
-      case"home": return <HomeScreen user={user} scans={scans} glycLogs={glycLogs} onNavigate={navigate} onGoGlyc={()=>setSubScreen("glycemia")} onGoVision={()=>setSubScreen("vision")} onGoRDV={()=>setSubScreen("rdv")}/>;
+      case"home": return <HomeScreen user={user} scans={scans} glycLogs={glycLogs} onNavigate={navigate} onGoGlyc={()=>setSubScreen("glycemia")} onGoVision={()=>setSubScreen("vision")} onGoRDV={()=>setSubScreen("rdv")} onGoScan={()=>switchTab("scan")}/>;
       case"scan": return <ScanScreen user={user} onDone={s=>{addScan(s);setSubScreen(null);}}/>;
       case"history": return <HistoryScreen scans={scans} glycLogs={glycLogs} onScanDetail={s=>{setDetail(s);setTab("profile");}}/>;
       case"chat": return <ChatScreen/>;
