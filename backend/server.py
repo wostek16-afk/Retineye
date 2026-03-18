@@ -8,6 +8,7 @@ Placer best_model_v2.pth dans ce dossier (même répertoire que server.py).
 import os
 import io
 import base64
+import threading
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -117,8 +118,7 @@ def _build_and_load(state_dict) -> nn.Module:
     return m
 
 
-@app.on_event("startup")
-def load_model():
+def _load_model_sync():
     global model
     if not os.path.exists(MODEL_PATH):
         model_url = os.environ.get("MODEL_URL", "")
@@ -163,6 +163,13 @@ def load_model():
 
     except Exception as e:
         print(f"❌ Erreur chargement modèle : {e}")
+
+
+@app.on_event("startup")
+def load_model():
+    """Lance le chargement du modèle dans un thread séparé pour ne pas bloquer /health."""
+    t = threading.Thread(target=_load_model_sync, daemon=True)
+    t.start()
 
 
 class AnalyzeRequest(BaseModel):
