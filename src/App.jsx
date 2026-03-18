@@ -451,10 +451,12 @@ function ScanScreen({user,onDone}){
     r.onload=e=>{setImg(e.target.result);setB64(e.target.result.split(",")[1]);setStep("preview");};
     r.readAsDataURL(f);
   };
-  const analyzeLocal=async()=>{
+  const getBase=()=>{
     const stored=DB.get("backendUrl","").trim();
-    const base=stored||import.meta.env.VITE_BACKEND_URL||"http://localhost:8000";
-    const resp=await fetch(`${base}/analyze`,{
+    return stored||import.meta.env.VITE_BACKEND_URL||"http://localhost:8000";
+  };
+  const analyzeLocal=async()=>{
+    const resp=await fetch(`${getBase()}/analyze`,{
       method:"POST",headers:{"Content-Type":"application/json"},
       body:JSON.stringify({image:b64}),
       signal:AbortSignal.timeout(12000),
@@ -462,29 +464,36 @@ function ScanScreen({user,onDone}){
     if(!resp.ok) throw new Error("backend_error");
     return await resp.json();
   };
-  const analyzeClaude=async()=>{
-    const key=DB.get("claudeApiKey","");
-    if(!key) throw new Error("no_api_key");
-    const PROMPT="Analyze this retinal fundus photo for diabetic retinopathy using ICDR scale 0-4. Return ONLY valid minified JSON with these keys: icdr_level (int 0-4), findings (short French string array max 4 items), confidence (int 50-99), notes (one French patient-facing sentence). No markdown no extra text.";
-    const body={model:"claude-sonnet-4-20250514",max_tokens:350,messages:[{role:"user",content:[{type:"image",source:{type:"base64",media_type:"image/jpeg",data:b64}},{type:"text",text:PROMPT}]}]};
-    const resp=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify(body)});
-    const data=await resp.json();
-    const txt=(data.content||[]).map(b=>b.text||"").join("");
-    return JSON.parse(txt.replace(/```json|```/g,"").trim());
+  const analyzeViaClaude=async()=>{
+    // Appel Claude via le backend (clé API côté serveur, aucune config utilisateur)
+    const resp=await fetch(`${getBase()}/analyze-claude`,{
+      method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({image:b64}),
+      signal:AbortSignal.timeout(30000),
+    });
+    if(!resp.ok){
+      // Fallback: clé API locale si le backend n'a pas CLAUDE_API_KEY
+      const clientKey=DB.get("claudeApiKey","");
+      if(!clientKey) throw new Error("no_backend");
+      const PROMPT="Analyze this retinal fundus photo for diabetic retinopathy using ICDR scale 0-4. Return ONLY valid minified JSON with these keys: icdr_level (int 0-4), findings (short French string array max 4 items), confidence (int 50-99), notes (one French patient-facing sentence). No markdown no extra text.";
+      const body={model:"claude-sonnet-4-20250514",max_tokens:350,messages:[{role:"user",content:[{type:"image",source:{type:"base64",media_type:"image/jpeg",data:b64}},{type:"text",text:PROMPT}]}]};
+      const r2=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":clientKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify(body)});
+      const d2=await r2.json();
+      const txt=(d2.content||[]).map(b=>b.text||"").join("");
+      return JSON.parse(txt.replace(/```json|```/g,"").trim());
+    }
+    return await resp.json();
   };
   const analyze=async()=>{
     setStep("analyzing");setErr("");const t0=Date.now();
     try{
       let parsed;
       try{ parsed=await analyzeLocal(); }
-      catch{ parsed=await analyzeClaude(); }
+      catch{ parsed=await analyzeViaClaude(); }
       setElapsed(((Date.now()-t0)/1000).toFixed(1));
       setRes(parsed);setStep("result");
     }catch(e){
-      const msg=e.message==="no_api_key"
-        ?"Aucune clé API Claude configurée. Allez dans Réglages → IA & Backend."
-        :"Analyse impossible. Vérifiez votre clé API Claude dans Réglages.";
-      setErr(msg);
+      setErr("Analyse impossible. Vérifiez la connexion au serveur.");
       setStep("preview");
     }
   };
@@ -934,11 +943,9 @@ function ProfileScreen({user,scans,onDelete,onLogout,onShowAuth,onUpdateConsent,
 // ── SETTINGS ──────────────────────────────────────────────────
 function SettingsScreen({onBack,darkMode,setDarkMode}){
   const t=useTheme();
-  const [apiKey,setApiKey]=useState(()=>DB.get("claudeApiKey",""));
   const [backendUrl,setBackendUrl]=useState(()=>DB.get("backendUrl",""));
   const [saved,setSaved]=useState(false);
   const saveIA=()=>{
-    DB.set("claudeApiKey",apiKey.trim());
     DB.set("backendUrl",backendUrl.trim());
     setSaved(true);
     setTimeout(()=>setSaved(false),2000);
@@ -951,15 +958,11 @@ function SettingsScreen({onBack,darkMode,setDarkMode}){
       </div>
       <SecTitle mt={22}>IA & Backend</SecTitle>
       <Card style={{marginBottom:12}}>
-        <div style={{color:t.text3,fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:.6,marginBottom:6,fontFamily:t.sm}}>Clé API Claude</div>
-        <input
-          type="password"
-          value={apiKey}
-          onChange={e=>setApiKey(e.target.value)}
-          placeholder="sk-ant-api03-..."
-          style={{width:"100%",padding:"10px 12px",borderRadius:10,border:`1px solid ${t.bg4}`,background:t.bg3,color:t.text,fontFamily:t.sm,fontSize:14,outline:"none",boxSizing:"border-box",marginBottom:10}}
-        />
-        <div style={{color:t.text3,fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:.6,marginBottom:6,fontFamily:t.sm}}>URL Backend (optionnel)</div>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+          <div style={{width:34,height:34,borderRadius:10,background:"rgba(10,132,255,.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>🤖</div>
+          <div><div style={{color:t.text,fontSize:14,fontWeight:600,fontFamily:t.sm}}>IA intégrée</div><div style={{color:"#30d158",fontSize:12,fontFamily:t.sm}}>Active — aucune configuration requise</div></div>
+        </div>
+        <div style={{color:t.text3,fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:.6,marginBottom:6,fontFamily:t.sm}}>URL Serveur (avancé)</div>
         <input
           type="text"
           value={backendUrl}
@@ -970,9 +973,6 @@ function SettingsScreen({onBack,darkMode,setDarkMode}){
         <button onClick={saveIA} style={{width:"100%",padding:"11px 0",borderRadius:12,border:"none",background:saved?"#30d158":"#0a84ff",color:"#fff",fontFamily:t.sm,fontSize:14,fontWeight:700,cursor:"pointer",transition:"background .3s"}}>
           {saved?"Enregistré ✓":"Sauvegarder"}
         </button>
-        <div style={{color:t.text4,fontSize:11,fontFamily:t.sm,marginTop:8,lineHeight:1.5}}>
-          Sans clé API Claude, l'analyse IA n'est pas disponible. Obtenez votre clé sur console.anthropic.com
-        </div>
       </Card>
       <SecTitle>Apparence</SecTitle>
       <Card style={{marginBottom:12}}>

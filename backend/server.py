@@ -192,6 +192,50 @@ def debug_keys():
     }
 
 
+@app.post("/analyze-claude")
+def analyze_claude(req: AnalyzeRequest):
+    """Analyse via Claude API côté serveur — aucune clé requise côté client."""
+    import requests as req_lib
+    import json as json_lib
+
+    api_key = os.environ.get("CLAUDE_API_KEY", "")
+    if not api_key:
+        raise HTTPException(status_code=503, detail="CLAUDE_API_KEY non configurée sur le serveur.")
+
+    prompt = (
+        "Analyze this retinal fundus photo for diabetic retinopathy using ICDR scale 0-4. "
+        "Return ONLY valid minified JSON with these keys: icdr_level (int 0-4), "
+        "findings (short French string array max 4 items), confidence (int 50-99), "
+        "notes (one French patient-facing sentence). No markdown no extra text."
+    )
+    body = {
+        "model": "claude-sonnet-4-20250514",
+        "max_tokens": 350,
+        "messages": [{
+            "role": "user",
+            "content": [
+                {"type": "image", "source": {"type": "base64", "media_type": "image/jpeg", "data": req.image}},
+                {"type": "text", "text": prompt},
+            ],
+        }],
+    }
+    try:
+        resp = req_lib.post(
+            "https://api.anthropic.com/v1/messages",
+            headers={"x-api-key": api_key, "anthropic-version": "2023-06-01", "Content-Type": "application/json"},
+            json=body,
+            timeout=30,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        txt = "".join(b.get("text", "") for b in data.get("content", []))
+        parsed = json_lib.loads(txt.replace("```json", "").replace("```", "").strip())
+        parsed["source"] = "claude"
+        return parsed
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur Claude API : {e}")
+
+
 @app.post("/analyze")
 def analyze(req: AnalyzeRequest):
     if model is None:
