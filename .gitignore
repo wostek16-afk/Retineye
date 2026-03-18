@@ -12,6 +12,18 @@ dist
 dist-ssr
 *.local
 
+# Env files (contiennent des clés API privées)
+.env
+.env.local
+.env.production
+
+# Capacitor native projects (générés par npx cap add)
+ios/
+android/
+
+# Modèle IA (trop lourd pour git)
+backend/best_model_v2.pth
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

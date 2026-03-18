@@ -121,8 +121,19 @@ def _build_and_load(state_dict) -> nn.Module:
 def load_model():
     global model
     if not os.path.exists(MODEL_PATH):
-        print(f"⚠️  best_model_v2.pth introuvable dans {MODEL_PATH}")
-        return
+        model_url = os.environ.get("MODEL_URL", "")
+        if model_url:
+            print(f"⬇️  Téléchargement du modèle depuis MODEL_URL…")
+            try:
+                import urllib.request
+                urllib.request.urlretrieve(model_url, MODEL_PATH)
+                print(f"✅ Modèle téléchargé dans {MODEL_PATH}")
+            except Exception as e:
+                print(f"❌ Erreur téléchargement modèle : {e}")
+                return
+        else:
+            print(f"⚠️  best_model_v2.pth introuvable dans {MODEL_PATH}. Définissez MODEL_URL pour le téléchargement automatique.")
+            return
     try:
         checkpoint = torch.load(MODEL_PATH, map_location=device, weights_only=False)
 

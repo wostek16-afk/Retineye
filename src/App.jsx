@@ -452,10 +452,12 @@ function ScanScreen({user,onDone}){
     r.readAsDataURL(f);
   };
   const analyzeLocal=async()=>{
-    const resp=await fetch("http://localhost:8000/analyze",{
+    const stored=DB.get("backendUrl","").trim();
+    const base=stored||import.meta.env.VITE_BACKEND_URL||"http://localhost:8000";
+    const resp=await fetch(`${base}/analyze`,{
       method:"POST",headers:{"Content-Type":"application/json"},
       body:JSON.stringify({image:b64}),
-      signal:AbortSignal.timeout(8000),
+      signal:AbortSignal.timeout(12000),
     });
     if(!resp.ok) throw new Error("backend_error");
     return await resp.json();
@@ -932,13 +934,47 @@ function ProfileScreen({user,scans,onDelete,onLogout,onShowAuth,onUpdateConsent,
 // ── SETTINGS ──────────────────────────────────────────────────
 function SettingsScreen({onBack,darkMode,setDarkMode}){
   const t=useTheme();
+  const [apiKey,setApiKey]=useState(()=>DB.get("claudeApiKey",""));
+  const [backendUrl,setBackendUrl]=useState(()=>DB.get("backendUrl",""));
+  const [saved,setSaved]=useState(false);
+  const saveIA=()=>{
+    DB.set("claudeApiKey",apiKey.trim());
+    DB.set("backendUrl",backendUrl.trim());
+    setSaved(true);
+    setTimeout(()=>setSaved(false),2000);
+  };
   return(
     <div style={{padding:"0 16px",background:"transparent",minHeight:"100%",paddingBottom:140}}>
       <div style={{paddingTop:56,paddingBottom:4}}>
         <BackBtn onBack={onBack} label="Résumé"/>
         <div style={{color:t.text,fontSize:30,fontWeight:700,letterSpacing:-.8,fontFamily:t.sf}}>Réglages</div>
       </div>
-      <SecTitle mt={22}>Apparence</SecTitle>
+      <SecTitle mt={22}>IA & Backend</SecTitle>
+      <Card style={{marginBottom:12}}>
+        <div style={{color:t.text3,fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:.6,marginBottom:6,fontFamily:t.sm}}>Clé API Claude</div>
+        <input
+          type="password"
+          value={apiKey}
+          onChange={e=>setApiKey(e.target.value)}
+          placeholder="sk-ant-api03-..."
+          style={{width:"100%",padding:"10px 12px",borderRadius:10,border:`1px solid ${t.bg4}`,background:t.bg3,color:t.text,fontFamily:t.sm,fontSize:14,outline:"none",boxSizing:"border-box",marginBottom:10}}
+        />
+        <div style={{color:t.text3,fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:.6,marginBottom:6,fontFamily:t.sm}}>URL Backend (optionnel)</div>
+        <input
+          type="text"
+          value={backendUrl}
+          onChange={e=>setBackendUrl(e.target.value)}
+          placeholder="https://mon-backend.railway.app"
+          style={{width:"100%",padding:"10px 12px",borderRadius:10,border:`1px solid ${t.bg4}`,background:t.bg3,color:t.text,fontFamily:t.sm,fontSize:14,outline:"none",boxSizing:"border-box",marginBottom:12}}
+        />
+        <button onClick={saveIA} style={{width:"100%",padding:"11px 0",borderRadius:12,border:"none",background:saved?"#30d158":"#0a84ff",color:"#fff",fontFamily:t.sm,fontSize:14,fontWeight:700,cursor:"pointer",transition:"background .3s"}}>
+          {saved?"Enregistré ✓":"Sauvegarder"}
+        </button>
+        <div style={{color:t.text4,fontSize:11,fontFamily:t.sm,marginTop:8,lineHeight:1.5}}>
+          Sans clé API Claude, l'analyse IA n'est pas disponible. Obtenez votre clé sur console.anthropic.com
+        </div>
+      </Card>
+      <SecTitle>Apparence</SecTitle>
       <Card style={{marginBottom:12}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
           <div style={{display:"flex",alignItems:"center",gap:12}}>
