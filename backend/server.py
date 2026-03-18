@@ -9,6 +9,7 @@ import os
 import io
 import base64
 import threading
+from contextlib import asynccontextmanager
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -19,7 +20,16 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-app = FastAPI(title="Retineye AI Backend")
+print("✅ Imports OK — démarrage FastAPI")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    t = threading.Thread(target=_load_model_sync, daemon=True)
+    t.start()
+    print("🔄 Thread chargement modèle lancé")
+    yield
+
+app = FastAPI(title="Retineye AI Backend", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -164,12 +174,6 @@ def _load_model_sync():
     except Exception as e:
         print(f"❌ Erreur chargement modèle : {e}")
 
-
-@app.on_event("startup")
-def load_model():
-    """Lance le chargement du modèle dans un thread séparé pour ne pas bloquer /health."""
-    t = threading.Thread(target=_load_model_sync, daemon=True)
-    t.start()
 
 
 class AnalyzeRequest(BaseModel):
