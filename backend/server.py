@@ -10,6 +10,11 @@ import io
 import base64
 import threading
 from contextlib import asynccontextmanager
+
+# Réduire l'utilisation mémoire de PyTorch
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+os.environ.setdefault("MKL_NUM_THREADS", "1")
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -19,6 +24,9 @@ from PIL import Image
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+import requests as http_client
+
+torch.set_num_threads(1)
 
 print("✅ Imports OK — démarrage FastAPI")
 
@@ -135,21 +143,29 @@ def _load_model_sync():
         if model_url:
             print(f"⬇️  Téléchargement du modèle depuis MODEL_URL…")
             try:
-                import urllib.request
                 hf_token = os.environ.get("HF_TOKEN", "")
-                if hf_token:
-                    req_hf = urllib.request.Request(model_url, headers={"Authorization": f"Bearer {hf_token}"})
-                    with urllib.request.urlopen(req_hf, timeout=300) as resp, open(MODEL_PATH, "wb") as f:
-                        while chunk := resp.read(8 * 1024 * 1024):
-                            f.write(chunk)
-                else:
-                    urllib.request.urlretrieve(model_url, MODEL_PATH)
+                headers = {"Authorization": f"Bearer {hf_token}"} if hf_token else {}
+                # requests gère les redirects HuggingFace→S3 correctement
+                with http_client.get(model_url, headers=headers, stream=True, timeout=300) as resp:
+                    resp.raise_for_status()
+                    total = int(resp.headers.get("content-length", 0))
+                    downloaded = 0
+                    with open(MODEL_PATH, "wb") as f:
+                        for chunk in resp.iter_content(chunk_size=8 * 1024 * 1024):
+                            if chunk:
+                                f.write(chunk)
+                                downloaded += len(chunk)
+                                if total:
+                                    print(f"   {downloaded / total * 100:.0f}% ({downloaded // 1024 // 1024}MB / {total // 1024 // 1024}MB)")
                 print(f"✅ Modèle téléchargé dans {MODEL_PATH}")
             except Exception as e:
                 print(f"❌ Erreur téléchargement modèle : {e}")
+                # Supprimer le fichier partiel si présent
+                if os.path.exists(MODEL_PATH):
+                    os.remove(MODEL_PATH)
                 return
         else:
-            print(f"⚠️  best_model_v2.pth introuvable dans {MODEL_PATH}. Définissez MODEL_URL pour le téléchargement automatique.")
+            print(f"⚠️  best_model_v2.pth introuvable. Définissez MODEL_URL + HF_TOKEN pour le téléchargement automatique.")
             return
     try:
         checkpoint = torch.load(MODEL_PATH, map_location=device, weights_only=False)
