@@ -451,10 +451,7 @@ function ScanScreen({user,onDone}){
     r.onload=e=>{setImg(e.target.result);setB64(e.target.result.split(",")[1]);setStep("preview");};
     r.readAsDataURL(f);
   };
-  const getBase=()=>{
-    const stored=DB.get("backendUrl","").trim();
-    return stored||import.meta.env.VITE_BACKEND_URL||"https://retineye-production.up.railway.app";
-  };
+  const getBase=()=>"";
   const analyzeLocal=async()=>{
     const resp=await fetch(`${getBase()}/analyze`,{
       method:"POST",headers:{"Content-Type":"application/json"},
@@ -471,7 +468,7 @@ function ScanScreen({user,onDone}){
       setElapsed(((Date.now()-t0)/1000).toFixed(1));
       setRes(parsed);setStep("result");
     }catch(e){
-      setErr("Analyse impossible. Vérifiez que le serveur Railway est en ligne.");
+      setErr("Analyse impossible. Le serveur est peut-être en cours de démarrage, réessayez.");
       setStep("preview");
     }
   };

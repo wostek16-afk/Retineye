@@ -1,6 +1,6 @@
 """
 Retineye — Backend IA pour HuggingFace Spaces
-Le modèle est téléchargé automatiquement depuis le repo HuggingFace au démarrage.
+Sert le frontend React buildé + l'API FastAPI sur le port 7860.
 """
 
 import os
@@ -20,6 +20,8 @@ from torchvision import transforms
 from PIL import Image
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from huggingface_hub import hf_hub_download
 
@@ -27,7 +29,7 @@ torch.set_num_threads(1)
 
 MODEL_REPO = "Wostek162/retineye-v2"
 MODEL_FILE = "best_model_v2.pth"
-MODEL_PATH = "/tmp/best_model_v2.pth"
+STATIC_DIR = "/app/dist"
 device = torch.device("cpu")
 model = None
 
@@ -185,3 +187,12 @@ def analyze(req: AnalyzeRequest):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# Servir le frontend React buildé — doit être en dernier
+if os.path.isdir(STATIC_DIR):
+    app.mount("/assets", StaticFiles(directory=f"{STATIC_DIR}/assets"), name="assets")
+
+    @app.get("/{full_path:path}")
+    def serve_spa(full_path: str):
+        return FileResponse(f"{STATIC_DIR}/index.html")
