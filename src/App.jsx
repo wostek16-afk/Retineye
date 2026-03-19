@@ -916,7 +916,7 @@ function ProfileScreen({user,scans,onDelete,onLogout,onShowAuth,onUpdateConsent,
 }
 
 // ── SETTINGS ──────────────────────────────────────────────────
-function SettingsScreen({onBack,darkMode,setDarkMode}){
+function SettingsScreen({onBack,darkMode,setDarkMode,onReset}){
   const t=useTheme();
   return(
     <div style={{padding:"0 16px",background:"transparent",minHeight:"100%",paddingBottom:140}}>
@@ -955,6 +955,12 @@ function SettingsScreen({onBack,darkMode,setDarkMode}){
         ))}
         <div style={{color:t.text4,fontSize:11,fontFamily:t.sm,lineHeight:1.5,marginTop:4}}>Outil de sensibilisation académique. Ne constitue pas un dispositif médical réglementé.</div>
       </Card>
+      <button
+        onClick={onReset}
+        style={{width:"100%",marginTop:32,padding:"15px 0",background:"#ff3b30",border:"none",borderRadius:14,color:"#fff",fontSize:16,fontWeight:700,fontFamily:t.sm,cursor:"pointer",letterSpacing:-.2}}
+      >
+        Réinitialiser les données
+      </button>
     </div>
   );
 }
@@ -1252,6 +1258,7 @@ export default function App(){
 
   const login=u=>{setUser(u);setScreen("app");setShowAuth(false);};
   const logout=()=>{DB.del("sess");setUser(null);setScans([]);setGlycLogs([]);setScreen("landing");};
+  const resetAllData=()=>{if(window.confirm("Réinitialiser toutes les données ? Cette action est irréversible.")){localStorage.removeItem(STORE_KEY);window.location.reload();}};
   const addScan=s=>{setScans(p=>[s,...p]);setTab("home");};
   const addGlyc=g=>{setGlycLogs(p=>[...p,g]);};
   const delScan=id=>setScans(p=>p.filter(s=>s.id!==id));
@@ -1270,7 +1277,7 @@ export default function App(){
   };
 
   const renderMain=()=>{
-    if(subScreen==="settings") return <SettingsScreen onBack={()=>setSubScreen(null)} darkMode={darkMode} setDarkMode={setDarkMode}/>;
+    if(subScreen==="settings") return <SettingsScreen onBack={()=>setSubScreen(null)} darkMode={darkMode} setDarkMode={setDarkMode} onReset={resetAllData}/>;
     if(subScreen==="glycemia") return <GlycemiaScreen glycLogs={glycLogs} onSave={g=>{addGlyc(g);}} onBack={()=>setSubScreen(null)}/>;
     if(subScreen==="vision") return <VisionScreen onBack={()=>setSubScreen(null)}/>;
     if(subScreen==="rdv") return <RDVScreen onBack={()=>setSubScreen(null)}/>;
