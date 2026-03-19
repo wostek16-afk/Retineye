@@ -7,64 +7,168 @@ const useLang = () => useContext(LangCtx);
 
 const I18N = {
   fr:{
+    // tabs
     tab_home:"Résumé",tab_scan:"Dépistage",tab_history:"Historique",tab_chat:"Assistant",tab_profile:"Profil",
-    settings:"Réglages",appearance:"Apparence",dark_mode:"Mode sombre",dark_on:"Activé",dark_off:"Désactivé",
-    lang_label:"Langue",
-    privacy_title:"Données & Confidentialité",
-    photo_label:"Photos",photo_desc:"Analysées localement · Aucune conservation",
-    analyses_label:"Analyses",analyses_desc:"Métadonnées anonymisées si consentement",
-    legal_label:"Base légale",legal_desc:"RGPD Art. 9.2.j · Recherche médicale",
-    hosting_label:"Hébergement",hosting_desc:"Serveurs EU (Frankfurt)",
-    about_title:"À propos",version_label:"Version",version_val:"bêta · Mars 2026",
-    author_label:"Auteur",author_val:"Siouala Ramy",
-    compliance_label:"Conformité",compliance_val:"RGPD · HDS · CE marquage en cours",
-    reset_btn:"Réinitialiser les données",
-    disclaimer:"Outil de sensibilisation académique. Ne constitue pas un dispositif médical réglementé.",
+    // settings
+    settings:"Réglages",appearance:"Apparence",dark_mode:"Mode sombre",dark_on:"Activé",dark_off:"Désactivé",lang_label:"Langue",
+    privacy_title:"Données & Confidentialité",photo_label:"Photos",photo_desc:"Analysées localement · Aucune conservation",
+    analyses_label:"Analyses",analyses_desc:"Métadonnées anonymisées si consentement",legal_label:"Base légale",legal_desc:"RGPD Art. 9.2.j · Recherche médicale",hosting_label:"Hébergement",hosting_desc:"Serveurs EU (Frankfurt)",
+    about_title:"À propos",version_label:"Version",version_val:"bêta · Mars 2026",author_label:"Auteur",author_val:"Siouala Ramy",compliance_label:"Conformité",compliance_val:"RGPD · HDS · CE marquage en cours",
+    reset_btn:"Réinitialiser les données",disclaimer:"Outil de sensibilisation académique. Ne constitue pas un dispositif médical réglementé.",
+    // home
+    greet_morning:"Bonjour",greet_afternoon:"Bon après-midi",greet_evening:"Bonsoir",
+    health_title:"Suivi de santé",ring_rdv:"Prochain RDV",ring_rdv_unit:"avant prochain FO",ring_glyc:"Glycémie",ring_glyc_unit:"g/L aujourd'hui",ring_vision:"Acuité visuelle",ring_vision_unit:"dernier Snellen",
+    last_retina:"Dernier résultat rétinien",glyc_today:"Glycémie aujourd'hui",glyc_tap:"Appuyez pour ajouter",measure:"mesure",measures:"mesures",
+    stat_analyses:"Analyses",stat_acuite:"Acuité",stat_mesures:"Mesures",stat_rdv:"Prochain FO",stat_total:"total",stat_glycemie:"glycémie",stat_fo:"fond d'œil",
+    guest_mode:"Mode invité",guest_desc:"Créez un compte pour tout sauvegarder.",guest_btn:"Créer",rdv_btn:"🏥 Prendre RDV ophtalmologue →",
+    // scan
+    scan_title:"Dépistage",scan_subtitle:"Analyse IA — Fond d'œil",scan_step1:"Import",scan_step2:"Analyse",scan_step3:"Résultat",
+    scan_photo_title:"Photo de fond d'œil",scan_photo_desc:"Importez une rétinographie depuis votre galerie.",scan_gallery:"🖼️ Galerie",scan_camera:"📷 Caméra",
+    scan_info:"Utilisez une vraie rétinographie (fond d'œil), pas une photo frontale de l'œil.",
+    scan_change:"Changer",scan_analyze:"Analyser →",scan_analyzing:"Analyse en cours…",scan_ai:"L'IA examine votre rétinographie",
+    scan_result_title:"Résultat ICDR",scan_level:"Niveau",scan_confidence:"Confiance",scan_findings:"Signes observés",
+    scan_urgent:"⚠️ Résultat nécessitant une consultation ophtalmologique urgente.",scan_doctolib:"🏥 Prendre RDV sur Doctolib →",
+    scan_footer:(s)=>`Analysé en ${s}s · Outil de sensibilisation — pas un diagnostic`,scan_save:"✓ Enregistrer dans mon historique",scan_error:"Analyse impossible. Le serveur est peut-être en cours de démarrage, réessayez.",
+    // history
+    hist_title:"Historique",hist_entries:(n)=>`${n} entrée${n!==1?"s":""}`,hist_empty_title:"Aucune entrée",hist_empty_desc:"Vos analyses apparaîtront ici.",
+    hist_all:"Tout",hist_retina:"Rétine",hist_glyc:"Glycémie",hist_vision:"Acuité",
+    hist_snellen:"Acuité Snellen",hist_parinaud:"Acuité Parinaud",
+    // chat
+    chat_subtitle:"Appuyez sur un sujet pour en savoir plus",chat_tool:"RetinaScore — Outil académique",chat_disclaimer_inline:"Ces informations sont indicatives et ne remplacent pas un avis médical.",chat_footer:"Pas un avis médical · Sources : HAS 2024 · SFO",
+    faq:[
+      {q:"Qu'est-ce que la rétinopathie diabétique ?",short:"Rétinopathie",a:"La rétinopathie diabétique (RD) est une complication du diabète touchant les vaisseaux rétiniens. Elle évolue silencieusement avant d'affecter la vision — d'où l'importance du dépistage annuel même sans symptôme.",icon:"👁️",color:"#0a84ff"},
+      {q:"À quoi correspond le score ICDR (0 à 4) ?",short:"Score ICDR",a:"L'ICDR classe la RD de 0 (aucun signe) à 4 (forme proliférante). Niveau 0–1 : contrôle annuel. Niveau 2 : ophtalmologue sous 6 mois. Niveaux 3–4 : consultation urgente.",icon:"📊",color:"#ff9f0a"},
+      {q:"Quelle est la cible de glycémie ?",short:"Glycémie",a:"HbA1c < 7 %. Glycémie à jeun : 0,70–1,26 g/L. Post-prandiale < 1,60 g/L (recommandations HAS 2024). Un équilibre glycémique strict ralentit la progression de la rétinopathie.",icon:"💉",color:"#30d158"},
+      {q:"Quels sont les traitements disponibles ?",short:"Traitements",a:"Selon le stade : laser pan-rétinien (PPR), injections intra-vitréennes anti-VEGF (Ranibizumab, Aflibercept) pour l'œdème maculaire, ou vitrectomie en cas de complications sévères.",icon:"💊",color:"#bf5af2"},
+      {q:"À quelle fréquence faire le fond d'œil ?",short:"Fréquence",a:"Fond d'œil annuel obligatoire dès le diagnostic pour le diabète de type 2. Pour le type 1, à partir de 5 ans d'évolution. En cas de grossesse ou HbA1c déséquilibrée : surveillance plus rapprochée.",icon:"📅",color:"#ff375f"},
+      {q:"Comment prévenir la rétinopathie ?",short:"Prévention",a:"Contrôle glycémique strict (HbA1c < 7 %), pression artérielle < 130/80 mmHg, arrêt du tabac, activité physique régulière et suivi ophtalmologique annuel.",icon:"🛡️",color:"#34c759"},
+      {q:"Mes données sont-elles confidentielles ?",short:"Confidentialité",a:"Vos photos sont analysées localement. Seules des métadonnées anonymisées sont conservées avec votre consentement explicite. Base légale : RGPD Art. 9.2.j — recherche médicale.",icon:"🔒",color:"#ff9f0a"},
+    ],
+    // icdr
+    icdr:[
+      {label:"Aucun signe",advice:"Votre rétine semble saine. Continuez vos contrôles annuels."},
+      {label:"Atteinte légère",advice:"Micro-anévrismes détectés. Contrôle ophtalmologique dans 12 mois."},
+      {label:"Atteinte modérée",advice:"Lésions modérées. Consultez un ophtalmologue sous 6 mois."},
+      {label:"Atteinte sévère",advice:"Atteinte sévère. Consultation ophtalmologique urgente."},
+      {label:"Forme proliférante",advice:"URGENCE. Consultez un ophtalmologue immédiatement."},
+    ],
   },
   en:{
     tab_home:"Summary",tab_scan:"Screening",tab_history:"History",tab_chat:"Assistant",tab_profile:"Profile",
-    settings:"Settings",appearance:"Appearance",dark_mode:"Dark mode",dark_on:"On",dark_off:"Off",
-    lang_label:"Language",
-    privacy_title:"Data & Privacy",
-    photo_label:"Photos",photo_desc:"Analysed locally · No retention",
-    analyses_label:"Analyses",analyses_desc:"Anonymised metadata if consent given",
-    legal_label:"Legal basis",legal_desc:"GDPR Art. 9.2.j · Medical research",
-    hosting_label:"Hosting",hosting_desc:"EU servers (Frankfurt)",
-    about_title:"About",version_label:"Version",version_val:"beta · March 2026",
-    author_label:"Author",author_val:"Siouala Ramy",
-    compliance_label:"Compliance",compliance_val:"GDPR · HDS · CE marking in progress",
-    reset_btn:"Reset all data",
-    disclaimer:"Academic awareness tool. Not a regulated medical device.",
+    settings:"Settings",appearance:"Appearance",dark_mode:"Dark mode",dark_on:"On",dark_off:"Off",lang_label:"Language",
+    privacy_title:"Data & Privacy",photo_label:"Photos",photo_desc:"Analysed locally · No retention",
+    analyses_label:"Analyses",analyses_desc:"Anonymised metadata if consent given",legal_label:"Legal basis",legal_desc:"GDPR Art. 9.2.j · Medical research",hosting_label:"Hosting",hosting_desc:"EU servers (Frankfurt)",
+    about_title:"About",version_label:"Version",version_val:"beta · March 2026",author_label:"Author",author_val:"Siouala Ramy",compliance_label:"Compliance",compliance_val:"GDPR · HDS · CE marking in progress",
+    reset_btn:"Reset all data",disclaimer:"Academic awareness tool. Not a regulated medical device.",
+    greet_morning:"Good morning",greet_afternoon:"Good afternoon",greet_evening:"Good evening",
+    health_title:"Health tracking",ring_rdv:"Next appt.",ring_rdv_unit:"before next FE",ring_glyc:"Blood sugar",ring_glyc_unit:"g/L today",ring_vision:"Visual acuity",ring_vision_unit:"last Snellen",
+    last_retina:"Last retinal result",glyc_today:"Blood sugar today",glyc_tap:"Tap to add",measure:"reading",measures:"readings",
+    stat_analyses:"Analyses",stat_acuite:"Acuity",stat_mesures:"Readings",stat_rdv:"Next FE",stat_total:"total",stat_glycemie:"blood sugar",stat_fo:"fundus exam",
+    guest_mode:"Guest mode",guest_desc:"Create an account to save everything.",guest_btn:"Create",rdv_btn:"🏥 Book ophthalmologist →",
+    scan_title:"Screening",scan_subtitle:"AI analysis — Fundus",scan_step1:"Import",scan_step2:"Analysis",scan_step3:"Result",
+    scan_photo_title:"Fundus photo",scan_photo_desc:"Import a retinal photo from your gallery.",scan_gallery:"🖼️ Gallery",scan_camera:"📷 Camera",
+    scan_info:"Use a real fundus photograph, not a frontal photo of the eye.",
+    scan_change:"Change",scan_analyze:"Analyse →",scan_analyzing:"Analysing…",scan_ai:"AI is examining your retinal image",
+    scan_result_title:"ICDR Result",scan_level:"Level",scan_confidence:"Confidence",scan_findings:"Observed signs",
+    scan_urgent:"⚠️ This result requires urgent ophthalmological consultation.",scan_doctolib:"🏥 Book an appointment →",
+    scan_footer:(s)=>`Analysed in ${s}s · Awareness tool — not a diagnosis`,scan_save:"✓ Save to my history",scan_error:"Analysis failed. The server may be starting up, please retry.",
+    hist_title:"History",hist_entries:(n)=>`${n} entr${n!==1?"ies":"y"}`,hist_empty_title:"No entries",hist_empty_desc:"Your analyses will appear here.",
+    hist_all:"All",hist_retina:"Retina",hist_glyc:"Blood sugar",hist_vision:"Acuity",hist_snellen:"Snellen acuity",hist_parinaud:"Parinaud acuity",
+    chat_subtitle:"Tap a topic to learn more",chat_tool:"RetinaScore — Academic tool",chat_disclaimer_inline:"This information is indicative and does not replace medical advice.",chat_footer:"Not medical advice · Sources: HAS 2024 · SFO",
+    faq:[
+      {q:"What is diabetic retinopathy?",short:"Retinopathy",a:"Diabetic retinopathy (DR) is a diabetes complication affecting retinal blood vessels. It progresses silently before affecting vision — hence the importance of annual screening even without symptoms.",icon:"👁️",color:"#0a84ff"},
+      {q:"What does the ICDR score (0–4) mean?",short:"ICDR score",a:"ICDR classifies DR from 0 (no signs) to 4 (proliferative form). Level 0–1: annual check. Level 2: ophthalmologist within 6 months. Levels 3–4: urgent consultation.",icon:"📊",color:"#ff9f0a"},
+      {q:"What is the target blood sugar?",short:"Blood sugar",a:"HbA1c < 7%. Fasting blood glucose: 0.70–1.26 g/L. Post-prandial < 1.60 g/L (HAS 2024). Strict glycaemic control slows retinopathy progression.",icon:"💉",color:"#30d158"},
+      {q:"What treatments are available?",short:"Treatments",a:"Depending on stage: pan-retinal laser (PRP), intravitreal anti-VEGF injections (Ranibizumab, Aflibercept) for macular oedema, or vitrectomy for severe complications.",icon:"💊",color:"#bf5af2"},
+      {q:"How often should I have a fundus exam?",short:"Frequency",a:"Annual fundus exam mandatory from diagnosis for type 2 diabetes. For type 1, from 5 years of onset. During pregnancy or with uncontrolled HbA1c: more frequent monitoring.",icon:"📅",color:"#ff375f"},
+      {q:"How to prevent retinopathy?",short:"Prevention",a:"Strict glycaemic control (HbA1c < 7%), blood pressure < 130/80 mmHg, no smoking, regular physical activity and annual eye check.",icon:"🛡️",color:"#34c759"},
+      {q:"Is my data confidential?",short:"Privacy",a:"Your photos are analysed locally. Only anonymised metadata is retained with your explicit consent. Legal basis: GDPR Art. 9.2.j — medical research.",icon:"🔒",color:"#ff9f0a"},
+    ],
+    icdr:[
+      {label:"No signs",advice:"Your retina appears healthy. Continue annual check-ups."},
+      {label:"Mild NPDR",advice:"Microaneurysms detected. Ophthalmological check within 12 months."},
+      {label:"Moderate NPDR",advice:"Moderate lesions. See an ophthalmologist within 6 months."},
+      {label:"Severe NPDR",advice:"Severe involvement. Urgent ophthalmological consultation."},
+      {label:"Proliferative DR",advice:"EMERGENCY. See an ophthalmologist immediately."},
+    ],
   },
   de:{
     tab_home:"Übersicht",tab_scan:"Screening",tab_history:"Verlauf",tab_chat:"Assistent",tab_profile:"Profil",
-    settings:"Einstellungen",appearance:"Darstellung",dark_mode:"Dunkelmodus",dark_on:"An",dark_off:"Aus",
-    lang_label:"Sprache",
-    privacy_title:"Daten & Datenschutz",
-    photo_label:"Fotos",photo_desc:"Lokal analysiert · Keine Speicherung",
-    analyses_label:"Analysen",analyses_desc:"Anonymisierte Metadaten bei Einwilligung",
-    legal_label:"Rechtsgrundlage",legal_desc:"DSGVO Art. 9.2.j · Medizinische Forschung",
-    hosting_label:"Hosting",hosting_desc:"EU-Server (Frankfurt)",
-    about_title:"Über",version_label:"Version",version_val:"Beta · März 2026",
-    author_label:"Autor",author_val:"Siouala Ramy",
-    compliance_label:"Konformität",compliance_val:"DSGVO · HDS · CE-Kennzeichnung laufend",
-    reset_btn:"Alle Daten zurücksetzen",
-    disclaimer:"Akademisches Sensibilisierungstool. Kein zugelassenes Medizinprodukt.",
+    settings:"Einstellungen",appearance:"Darstellung",dark_mode:"Dunkelmodus",dark_on:"An",dark_off:"Aus",lang_label:"Sprache",
+    privacy_title:"Daten & Datenschutz",photo_label:"Fotos",photo_desc:"Lokal analysiert · Keine Speicherung",
+    analyses_label:"Analysen",analyses_desc:"Anonymisierte Metadaten bei Einwilligung",legal_label:"Rechtsgrundlage",legal_desc:"DSGVO Art. 9.2.j · Medizinische Forschung",hosting_label:"Hosting",hosting_desc:"EU-Server (Frankfurt)",
+    about_title:"Über",version_label:"Version",version_val:"Beta · März 2026",author_label:"Autor",author_val:"Siouala Ramy",compliance_label:"Konformität",compliance_val:"DSGVO · HDS · CE-Kennzeichnung laufend",
+    reset_btn:"Alle Daten zurücksetzen",disclaimer:"Akademisches Sensibilisierungstool. Kein zugelassenes Medizinprodukt.",
+    greet_morning:"Guten Morgen",greet_afternoon:"Guten Tag",greet_evening:"Guten Abend",
+    health_title:"Gesundheitsübersicht",ring_rdv:"Nächster Termin",ring_rdv_unit:"bis nächster AU",ring_glyc:"Blutzucker",ring_glyc_unit:"g/L heute",ring_vision:"Sehschärfe",ring_vision_unit:"letzter Snellen",
+    last_retina:"Letztes Netzhautergebnis",glyc_today:"Blutzucker heute",glyc_tap:"Tippen zum Hinzufügen",measure:"Messung",measures:"Messungen",
+    stat_analyses:"Analysen",stat_acuite:"Sehschärfe",stat_mesures:"Messungen",stat_rdv:"Nächste AU",stat_total:"gesamt",stat_glycemie:"Blutzucker",stat_fo:"Augenuntersuchung",
+    guest_mode:"Gastmodus",guest_desc:"Erstellen Sie ein Konto, um alles zu speichern.",guest_btn:"Erstellen",rdv_btn:"🏥 Augenarzt buchen →",
+    scan_title:"Screening",scan_subtitle:"KI-Analyse — Fundus",scan_step1:"Import",scan_step2:"Analyse",scan_step3:"Ergebnis",
+    scan_photo_title:"Fundusfoto",scan_photo_desc:"Importieren Sie eine Netzhautaufnahme aus Ihrer Galerie.",scan_gallery:"🖼️ Galerie",scan_camera:"📷 Kamera",
+    scan_info:"Verwenden Sie ein echtes Fundusfoto, kein frontales Augenfoto.",
+    scan_change:"Ändern",scan_analyze:"Analysieren →",scan_analyzing:"Analyse läuft…",scan_ai:"KI untersucht Ihre Netzhautaufnahme",
+    scan_result_title:"ICDR-Ergebnis",scan_level:"Niveau",scan_confidence:"Konfidenz",scan_findings:"Beobachtete Zeichen",
+    scan_urgent:"⚠️ Dieses Ergebnis erfordert eine dringende augenärztliche Konsultation.",scan_doctolib:"🏥 Termin buchen →",
+    scan_footer:(s)=>`Analysiert in ${s}s · Sensibilisierungstool — keine Diagnose`,scan_save:"✓ In meiner Historie speichern",scan_error:"Analyse fehlgeschlagen. Der Server startet möglicherweise, bitte erneut versuchen.",
+    hist_title:"Verlauf",hist_entries:(n)=>`${n} Eintrag${n!==1?"einträge":""}`,hist_empty_title:"Keine Einträge",hist_empty_desc:"Ihre Analysen erscheinen hier.",
+    hist_all:"Alle",hist_retina:"Netzhaut",hist_glyc:"Blutzucker",hist_vision:"Sehschärfe",hist_snellen:"Snellen-Sehschärfe",hist_parinaud:"Parinaud-Sehschärfe",
+    chat_subtitle:"Thema antippen für mehr Infos",chat_tool:"RetinaScore — Akademisches Tool",chat_disclaimer_inline:"Diese Informationen sind indikativ und ersetzen keinen Arzt.",chat_footer:"Kein medizinischer Rat · Quellen: HAS 2024 · SFO",
+    faq:[
+      {q:"Was ist diabetische Retinopathie?",short:"Retinopathie",a:"Die diabetische Retinopathie (DR) ist eine Diabetes-Komplikation, die die Netzhautgefäße betrifft. Sie schreitet still voran, bevor sie das Sehen beeinträchtigt.",icon:"👁️",color:"#0a84ff"},
+      {q:"Was bedeutet der ICDR-Score (0–4)?",short:"ICDR-Score",a:"ICDR klassifiziert DR von 0 (keine Zeichen) bis 4 (proliferative Form). Stufe 0–1: jährliche Kontrolle. Stufe 2: Augenarzt in 6 Monaten. Stufen 3–4: dringende Konsultation.",icon:"📊",color:"#ff9f0a"},
+      {q:"Was ist der Zielwert für den Blutzucker?",short:"Blutzucker",a:"HbA1c < 7%. Nüchternblutzucker: 0,70–1,26 g/L. Postprandial < 1,60 g/L. Strikte Einstellung verlangsamt die Retinopathie.",icon:"💉",color:"#30d158"},
+      {q:"Welche Behandlungen gibt es?",short:"Behandlungen",a:"Je nach Stadium: panretinale Laserkoagulation, intravitreale Anti-VEGF-Injektionen oder Vitrektomie bei schweren Komplikationen.",icon:"💊",color:"#bf5af2"},
+      {q:"Wie oft sollte ich zur Augenuntersuchung?",short:"Häufigkeit",a:"Jährliche Augenuntersuchung ab Diagnose bei Typ-2-Diabetes. Bei Typ 1 ab 5 Jahren Krankheitsdauer. In der Schwangerschaft: engmaschigere Überwachung.",icon:"📅",color:"#ff375f"},
+      {q:"Wie lässt sich Retinopathie vorbeugen?",short:"Prävention",a:"Strenge Blutzuckerkontrolle (HbA1c < 7%), Blutdruck < 130/80 mmHg, Nichtrauchen, körperliche Aktivität und jährliche Augenuntersuchung.",icon:"🛡️",color:"#34c759"},
+      {q:"Sind meine Daten vertraulich?",short:"Datenschutz",a:"Ihre Fotos werden lokal analysiert. Nur anonymisierte Metadaten werden mit Ihrer Einwilligung gespeichert. Rechtsgrundlage: DSGVO Art. 9.2.j.",icon:"🔒",color:"#ff9f0a"},
+    ],
+    icdr:[
+      {label:"Keine Zeichen",advice:"Ihre Netzhaut scheint gesund. Jährliche Kontrollen fortsetzen."},
+      {label:"Leichte DR",advice:"Mikroaneurysmen erkannt. Augenärztliche Kontrolle in 12 Monaten."},
+      {label:"Mäßige DR",advice:"Mäßige Läsionen. Augenarzt innerhalb von 6 Monaten aufsuchen."},
+      {label:"Schwere DR",advice:"Schwere Beteiligung. Dringende augenärztliche Konsultation."},
+      {label:"Proliferative DR",advice:"NOTFALL. Sofort einen Augenarzt aufsuchen."},
+    ],
   },
   ro:{
     tab_home:"Rezumat",tab_scan:"Screening",tab_history:"Istoric",tab_chat:"Asistent",tab_profile:"Profil",
-    settings:"Setări",appearance:"Aspect",dark_mode:"Mod întunecat",dark_on:"Activat",dark_off:"Dezactivat",
-    lang_label:"Limbă",
-    privacy_title:"Date & Confidențialitate",
-    photo_label:"Fotografii",photo_desc:"Analizate local · Fără stocare",
-    analyses_label:"Analize",analyses_desc:"Metadate anonimizate cu consimțământ",
-    legal_label:"Temei legal",legal_desc:"GDPR Art. 9.2.j · Cercetare medicală",
-    hosting_label:"Găzduire",hosting_desc:"Servere UE (Frankfurt)",
-    about_title:"Despre",version_label:"Versiune",version_val:"beta · Martie 2026",
-    author_label:"Autor",author_val:"Siouala Ramy",
-    compliance_label:"Conformitate",compliance_val:"GDPR · HDS · Marcare CE în curs",
-    reset_btn:"Resetați datele",
-    disclaimer:"Instrument academic de sensibilizare. Nu este un dispozitiv medical reglementat.",
+    settings:"Setări",appearance:"Aspect",dark_mode:"Mod întunecat",dark_on:"Activat",dark_off:"Dezactivat",lang_label:"Limbă",
+    privacy_title:"Date & Confidențialitate",photo_label:"Fotografii",photo_desc:"Analizate local · Fără stocare",
+    analyses_label:"Analize",analyses_desc:"Metadate anonimizate cu consimțământ",legal_label:"Temei legal",legal_desc:"GDPR Art. 9.2.j · Cercetare medicală",hosting_label:"Găzduire",hosting_desc:"Servere UE (Frankfurt)",
+    about_title:"Despre",version_label:"Versiune",version_val:"beta · Martie 2026",author_label:"Autor",author_val:"Siouala Ramy",compliance_label:"Conformitate",compliance_val:"GDPR · HDS · Marcare CE în curs",
+    reset_btn:"Resetați datele",disclaimer:"Instrument academic de sensibilizare. Nu este un dispozitiv medical reglementat.",
+    greet_morning:"Bună dimineața",greet_afternoon:"Bună ziua",greet_evening:"Bună seara",
+    health_title:"Monitorizare sănătate",ring_rdv:"Următoarea prog.",ring_rdv_unit:"până la FO",ring_glyc:"Glicemie",ring_glyc_unit:"g/L azi",ring_vision:"Acuitate vizuală",ring_vision_unit:"ultimul Snellen",
+    last_retina:"Ultimul rezultat retinian",glyc_today:"Glicemie azi",glyc_tap:"Atingeți pentru a adăuga",measure:"măsurătoare",measures:"măsurători",
+    stat_analyses:"Analize",stat_acuite:"Acuitate",stat_mesures:"Măsurători",stat_rdv:"Urm. FO",stat_total:"total",stat_glycemie:"glicemie",stat_fo:"fund de ochi",
+    guest_mode:"Mod invitat",guest_desc:"Creați un cont pentru a salva totul.",guest_btn:"Creare",rdv_btn:"🏥 Programare oftalmolog →",
+    scan_title:"Screening",scan_subtitle:"Analiză IA — Fund de ochi",scan_step1:"Import",scan_step2:"Analiză",scan_step3:"Rezultat",
+    scan_photo_title:"Fotografie fund de ochi",scan_photo_desc:"Importați o retinografie din galeria dvs.",scan_gallery:"🖼️ Galerie",scan_camera:"📷 Cameră",
+    scan_info:"Folosiți o retinografie reală, nu o fotografie frontală a ochiului.",
+    scan_change:"Schimbați",scan_analyze:"Analizați →",scan_analyzing:"Analiză în curs…",scan_ai:"IA examinează retinografia dvs.",
+    scan_result_title:"Rezultat ICDR",scan_level:"Nivel",scan_confidence:"Încredere",scan_findings:"Semne observate",
+    scan_urgent:"⚠️ Rezultat ce necesită consultație oftalmologică urgentă.",scan_doctolib:"🏥 Programați o consultație →",
+    scan_footer:(s)=>`Analizat în ${s}s · Instrument de sensibilizare — nu un diagnostic`,scan_save:"✓ Salvare în istoricul meu",scan_error:"Analiză imposibilă. Serverul poate porni, reîncercați.",
+    hist_title:"Istoric",hist_entries:(n)=>`${n} înregistrare${n!==1?"i":""}`,hist_empty_title:"Nicio înregistrare",hist_empty_desc:"Analizele dvs. vor apărea aici.",
+    hist_all:"Toate",hist_retina:"Retină",hist_glyc:"Glicemie",hist_vision:"Acuitate",hist_snellen:"Acuitate Snellen",hist_parinaud:"Acuitate Parinaud",
+    chat_subtitle:"Atingeți un subiect pentru mai multe informații",chat_tool:"RetinaScore — Instrument academic",chat_disclaimer_inline:"Aceste informații sunt orientative și nu înlocuiesc sfatul medical.",chat_footer:"Nu este sfat medical · Surse: HAS 2024 · SFO",
+    faq:[
+      {q:"Ce este retinopatia diabetică?",short:"Retinopatie",a:"Retinopatia diabetică (RD) este o complicație a diabetului care afectează vasele retiniene. Evoluează tăcut înainte de a afecta vederea — de aceea screeningul anual este esențial.",icon:"👁️",color:"#0a84ff"},
+      {q:"Ce înseamnă scorul ICDR (0–4)?",short:"Scor ICDR",a:"ICDR clasifică RD de la 0 (fără semne) la 4 (formă proliferativă). Nivel 0–1: control anual. Nivel 2: oftalmolog în 6 luni. Niveluri 3–4: consultație urgentă.",icon:"📊",color:"#ff9f0a"},
+      {q:"Care este ținta glicemiei?",short:"Glicemie",a:"HbA1c < 7%. Glicemie à jeun: 0,70–1,26 g/L. Post-prandial < 1,60 g/L. Controlul strict al glicemiei încetinește progresia retinopatiei.",icon:"💉",color:"#30d158"},
+      {q:"Ce tratamente sunt disponibile?",short:"Tratamente",a:"În funcție de stadiu: laser pan-retinian, injecții intravitreene anti-VEGF sau vitrectomie în caz de complicații severe.",icon:"💊",color:"#bf5af2"},
+      {q:"Cât de des trebuie făcut fundul de ochi?",short:"Frecvență",a:"Fund de ochi anual obligatoriu de la diagnostic pentru diabetul de tip 2. Pentru tipul 1, după 5 ani de evoluție.",icon:"📅",color:"#ff375f"},
+      {q:"Cum se previne retinopatia?",short:"Prevenție",a:"Control glicemic strict (HbA1c < 7%), tensiune < 130/80 mmHg, renunțarea la fumat, activitate fizică regulată și control oftalmic anual.",icon:"🛡️",color:"#34c759"},
+      {q:"Datele mele sunt confidențiale?",short:"Confidențialitate",a:"Fotografiile dvs. sunt analizate local. Doar metadate anonimizate sunt păstrate cu consimțământul dvs. explicit. Temei legal: GDPR Art. 9.2.j.",icon:"🔒",color:"#ff9f0a"},
+    ],
+    icdr:[
+      {label:"Fără semne",advice:"Retina dvs. pare sănătoasă. Continuați controalele anuale."},
+      {label:"Afectare ușoară",advice:"Microanevrisme detectate. Control oftalmologic în 12 luni."},
+      {label:"Afectare moderată",advice:"Leziuni moderate. Consultați un oftalmolog în 6 luni."},
+      {label:"Afectare severă",advice:"Afectare severă. Consultație oftalmologică urgentă."},
+      {label:"Formă proliferativă",advice:"URGENȚĂ. Consultați imediat un oftalmolog."},
+    ],
   },
 };
 
@@ -78,13 +182,16 @@ const DB = {
   del:(k)=>{delete window._rs8[k];_saveStore(window._rs8);},
 };
 
-const ICDR=[
-  {level:0,label:"Aucun signe",color:"#30d158",bg:"rgba(48,209,88,0.12)",emoji:"✅",advice:"Votre rétine semble saine. Continuez vos contrôles annuels."},
-  {level:1,label:"Atteinte légère",color:"#ffd60a",bg:"rgba(255,214,10,0.12)",emoji:"🟡",advice:"Micro-anévrismes détectés. Contrôle ophtalmologique dans 12 mois."},
-  {level:2,label:"Atteinte modérée",color:"#ff9f0a",bg:"rgba(255,159,10,0.12)",emoji:"🟠",advice:"Lésions modérées. Consultez un ophtalmologue sous 6 mois."},
-  {level:3,label:"Atteinte sévère",color:"#ff453a",bg:"rgba(255,69,58,0.12)",emoji:"🔴",advice:"Atteinte sévère. Consultation ophtalmologique urgente."},
-  {level:4,label:"Forme proliférante",color:"#bf5af2",bg:"rgba(191,90,242,0.12)",emoji:"🚨",advice:"URGENCE. Consultez un ophtalmologue immédiatement."},
+const ICDR_META=[
+  {level:0,color:"#30d158",bg:"rgba(48,209,88,0.12)",emoji:"✅"},
+  {level:1,color:"#ffd60a",bg:"rgba(255,214,10,0.12)",emoji:"🟡"},
+  {level:2,color:"#ff9f0a",bg:"rgba(255,159,10,0.12)",emoji:"🟠"},
+  {level:3,color:"#ff453a",bg:"rgba(255,69,58,0.12)",emoji:"🔴"},
+  {level:4,color:"#bf5af2",bg:"rgba(191,90,242,0.12)",emoji:"🚨"},
 ];
+const getICDR=(lang)=>ICDR_META.map((m,i)=>({...m,...(I18N[lang]||I18N.fr).icdr[i]}));
+// backward compat — default FR
+const ICDR=getICDR("fr");
 
 const SNELLEN=[
   {f:"1/10", size:52,row:"E F"},
@@ -278,9 +385,10 @@ function TabBar({tab,set}){
 // ── HOME ──────────────────────────────────────────────────────
 function HomeScreen({user,scans,glycLogs,onNavigate,onGoGlyc,onGoVision,onGoRDV,onGoScan}){
   const t=useTheme();
+  const lang=useLang(); const i=I18N[lang]||I18N.fr; const ICDR=getICDR(lang);
   const now=new Date();
   const h=now.getHours();
-  const greet=h<12?"Bonjour":h<18?"Bon après-midi":"Bonsoir";
+  const greet=h<12?i.greet_morning:h<18?i.greet_afternoon:i.greet_evening;
   const name=user?.name?.split(" ")[0]||null;
   const last=scans[0];
   const lastLevel=last?.icdr_level??null;
@@ -297,9 +405,9 @@ function HomeScreen({user,scans,glycLogs,onNavigate,onGoGlyc,onGoVision,onGoRDV,
   const avgG=todayG.length?todayG.reduce((a,g)=>a+g.value,0)/todayG.length:null;
   const lastVision=DB.get("last_vision",null);
   const rings=[
-    {prog:rdvProg,color:"#ff375f",label:"Prochain RDV",value:daysUntil!=null?daysUntil+"j":"—",unit:nextRdv?nextRdv.type:"avant prochain FO"},
-    {prog:avgG?Math.max(0,1-Math.abs(avgG-1.0)/0.8):0,color:"#30d158",label:"Glycémie",value:avgG?avgG.toFixed(2):"—",unit:"g/L aujourd'hui"},
-    {prog:lastVision?parseFloat(lastVision):0,color:"#0a84ff",label:"Acuité visuelle",value:lastVision||"—",unit:"dernier Snellen"},
+    {prog:rdvProg,color:"#ff375f",label:i.ring_rdv,value:daysUntil!=null?daysUntil+"j":"—",unit:nextRdv?nextRdv.type:i.ring_rdv_unit},
+    {prog:avgG?Math.max(0,1-Math.abs(avgG-1.0)/0.8):0,color:"#30d158",label:i.ring_glyc,value:avgG?avgG.toFixed(2):"—",unit:i.ring_glyc_unit},
+    {prog:lastVision?parseFloat(lastVision):0,color:"#0a84ff",label:i.ring_vision,value:lastVision||"—",unit:i.ring_vision_unit},
   ];
   const dateStr=now.toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"});
   return(
@@ -318,7 +426,7 @@ function HomeScreen({user,scans,glycLogs,onNavigate,onGoGlyc,onGoVision,onGoRDV,
       </div>
       {/* Activity rings card */}
       <Card style={{marginTop:14}} className="fade-up-1">
-        <div style={{color:t.text,fontSize:15,fontWeight:600,fontFamily:t.sf,marginBottom:14}}>Suivi de santé</div>
+        <div style={{color:t.text,fontSize:15,fontWeight:600,fontFamily:t.sf,marginBottom:14}}>{i.health_title}</div>
         <div style={{display:"flex",gap:14,alignItems:"center"}}>
           <TripleRings rings={rings} size={148}/>
           <div style={{flex:1,display:"flex",flexDirection:"column",gap:13}}>
@@ -337,7 +445,7 @@ function HomeScreen({user,scans,glycLogs,onNavigate,onGoGlyc,onGoVision,onGoRDV,
       {/* Last scan result */}
       {lastLevel!=null&&(
         <div style={{background:ICDR[lastLevel].bg,borderRadius:18,padding:"14px 16px",marginTop:12,border:`1px solid ${ICDR[lastLevel].color}33`}} className="fade-up-2">
-          <div style={{color:ICDR[lastLevel].color,fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:1,fontFamily:t.sm,marginBottom:7}}>Dernier résultat rétinien</div>
+          <div style={{color:ICDR[lastLevel].color,fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:1,fontFamily:t.sm,marginBottom:7}}>{i.last_retina}</div>
           <div style={{display:"flex",alignItems:"center",gap:11,marginBottom:8}}>
             <span style={{fontSize:32}}>{ICDR[lastLevel].emoji}</span>
             <div>
@@ -346,17 +454,17 @@ function HomeScreen({user,scans,glycLogs,onNavigate,onGoGlyc,onGoVision,onGoRDV,
             </div>
           </div>
           <div style={{color:t.text2,fontSize:13,fontFamily:t.sm,lineHeight:1.55}}>{ICDR[lastLevel].advice}</div>
-          {lastLevel>=3&&<a href="https://www.doctolib.fr/ophtalmologue" target="_blank" rel="noopener noreferrer" style={{display:"block",textDecoration:"none",width:"100%",marginTop:10,padding:"11px 0",borderRadius:12,border:"none",background:"#ff453a",color:"#fff",fontSize:14,fontWeight:700,fontFamily:t.sm,textAlign:"center"}}>🏥 Prendre RDV ophtalmologue →</a>}
+          {lastLevel>=3&&<a href="https://www.doctolib.fr/ophtalmologue" target="_blank" rel="noopener noreferrer" style={{display:"block",textDecoration:"none",width:"100%",marginTop:10,padding:"11px 0",borderRadius:12,border:"none",background:"#ff453a",color:"#fff",fontSize:14,fontWeight:700,fontFamily:t.sm,textAlign:"center"}}>{i.rdv_btn}</a>}
         </div>
       )}
       {/* Glycemia quick card */}
       <Card style={{marginTop:12}} onClick={onGoGlyc} className="fade-up-2">
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
           <div>
-            <div style={{color:"#30d158",fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:1,fontFamily:t.sm,marginBottom:5}}>Glycémie aujourd'hui</div>
+            <div style={{color:"#30d158",fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:1,fontFamily:t.sm,marginBottom:5}}>{i.glyc_today}</div>
             {avgG!=null
-              ?<div style={{display:"flex",alignItems:"baseline",gap:6}}><span style={{color:t.text,fontSize:26,fontWeight:700,fontFamily:t.sf}}>{avgG.toFixed(2)}</span><span style={{color:t.text3,fontSize:13,fontFamily:t.sm}}>g/L · {todayG.length} mesure{todayG.length>1?"s":""}</span></div>
-              :<div style={{color:t.text3,fontSize:14,fontFamily:t.sm}}>Appuyez pour ajouter</div>}
+              ?<div style={{display:"flex",alignItems:"baseline",gap:6}}><span style={{color:t.text,fontSize:26,fontWeight:700,fontFamily:t.sf}}>{avgG.toFixed(2)}</span><span style={{color:t.text3,fontSize:13,fontFamily:t.sm}}>g/L · {todayG.length} {todayG.length>1?i.measures:i.measure}</span></div>
+              :<div style={{color:t.text3,fontSize:14,fontFamily:t.sm}}>{i.glyc_tap}</div>}
           </div>
           <div style={{display:"flex",gap:10,alignItems:"center"}}>
             {todayG.length>=2&&<Spark values={todayG.map(g=>g.value)} color="#30d158"/>}
@@ -366,7 +474,7 @@ function HomeScreen({user,scans,glycLogs,onNavigate,onGoGlyc,onGoVision,onGoRDV,
       </Card>
       {/* Quick stats grid */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginTop:12}} className="fade-up-3">
-        {[["📊","Analyses",String(scans.length),"total","#ff375f",onGoScan],["👓","Acuité",lastVision||"—","Snellen","#0a84ff",onGoVision],["💉","Mesures",String(glycLogs.length),"glycémie","#30d158",onGoGlyc],["📅","Prochain FO",daysUntil!=null?daysUntil+"j":"—","fond d'œil","#ffd60a",onGoRDV]].map(([ico,lbl,val,sub,color,action])=>(
+        {[["📊",i.stat_analyses,String(scans.length),i.stat_total,"#ff375f",onGoScan],["👓",i.stat_acuite,lastVision||"—","Snellen","#0a84ff",onGoVision],["💉",i.stat_mesures,String(glycLogs.length),i.stat_glycemie,"#30d158",onGoGlyc],["📅",i.stat_rdv,daysUntil!=null?daysUntil+"j":"—",i.stat_fo,"#ffd60a",onGoRDV]].map(([ico,lbl,val,sub,color,action])=>(
           <Card key={lbl} style={{padding:"12px 13px",cursor:action?"pointer":"default"}} onClick={action||undefined}>
             <div style={{fontSize:20,marginBottom:5}}>{ico}</div>
             <div style={{color:t.text3,fontSize:10,fontFamily:t.sm,marginBottom:1}}>{lbl}</div>
@@ -377,8 +485,8 @@ function HomeScreen({user,scans,glycLogs,onNavigate,onGoGlyc,onGoVision,onGoRDV,
       </div>
       {!user&&<Card style={{marginTop:12,display:"flex",alignItems:"center",gap:12}}>
         <span style={{fontSize:22}}>👤</span>
-        <div style={{flex:1}}><div style={{color:t.text,fontSize:13,fontWeight:600,fontFamily:t.sm}}>Mode invité</div><div style={{color:t.text3,fontSize:11,fontFamily:t.sm,marginTop:1}}>Créez un compte pour tout sauvegarder.</div></div>
-        <button onClick={()=>onNavigate("auth")} style={{background:"#0a84ff",border:"none",borderRadius:10,padding:"7px 12px",color:"#fff",fontSize:12,fontWeight:600,fontFamily:t.sm,cursor:"pointer"}}>Créer</button>
+        <div style={{flex:1}}><div style={{color:t.text,fontSize:13,fontWeight:600,fontFamily:t.sm}}>{i.guest_mode}</div><div style={{color:t.text3,fontSize:11,fontFamily:t.sm,marginTop:1}}>{i.guest_desc}</div></div>
+        <button onClick={()=>onNavigate("auth")} style={{background:"#0a84ff",border:"none",borderRadius:10,padding:"7px 12px",color:"#fff",fontSize:12,fontWeight:600,fontFamily:t.sm,cursor:"pointer"}}>{i.guest_btn}</button>
       </Card>}
     </div>
   );
@@ -502,7 +610,7 @@ function GlycemiaScreen({glycLogs,onSave,onBack}){
 
 // ── SCAN ──────────────────────────────────────────────────────
 function ScanScreen({user,onDone}){
-  const t=useTheme();
+  const t=useTheme(); const lang=useLang(); const i=I18N[lang]||I18N.fr; const ICDR=getICDR(lang);
   const [step,setStep]=useState("pick");
   const [img,setImg]=useState(null);
   const [b64,setB64]=useState(null);
@@ -534,7 +642,7 @@ function ScanScreen({user,onDone}){
       setElapsed(((Date.now()-t0)/1000).toFixed(1));
       setRes(parsed);setStep("result");
     }catch(e){
-      setErr("Analyse impossible. Le serveur est peut-être en cours de démarrage, réessayez.");
+      setErr(i.scan_error);
       setStep("preview");
     }
   };
@@ -547,37 +655,37 @@ function ScanScreen({user,onDone}){
   return(
     <div style={{padding:"0 16px",background:"transparent",minHeight:"100%",paddingBottom:140}}>
       <div style={{paddingTop:56,paddingBottom:16}}>
-        <div style={{color:t.text,fontSize:30,fontWeight:700,letterSpacing:-.8,fontFamily:t.sf}}>Dépistage</div>
-        <div style={{color:t.text3,fontSize:14,fontFamily:t.sm,marginTop:3}}>Analyse IA — Fond d'œil</div>
+        <div style={{color:t.text,fontSize:30,fontWeight:700,letterSpacing:-.8,fontFamily:t.sf}}>{i.scan_title}</div>
+        <div style={{color:t.text3,fontSize:14,fontFamily:t.sm,marginTop:3}}>{i.scan_subtitle}</div>
       </div>
       <div style={{display:"flex",gap:6,marginBottom:22}}>
-        {["Import","Analyse","Résultat"].map((s,i)=>(
+        {[i.scan_step1,i.scan_step2,i.scan_step3].map((s,si)=>(
           <div key={s} style={{flex:1}}>
-            <div style={{height:3,borderRadius:2,background:i<cur?"#30d158":i===cur?"#0a84ff":t.bg3,marginBottom:4,transition:"all .3s"}}/>
-            <div style={{color:i<cur?"#30d158":i===cur?"#0a84ff":t.text4,fontSize:10,fontWeight:600,fontFamily:t.sm,textAlign:"center"}}>{s}</div>
+            <div style={{height:3,borderRadius:2,background:si<cur?"#30d158":si===cur?"#0a84ff":t.bg3,marginBottom:4,transition:"all .3s"}}/>
+            <div style={{color:si<cur?"#30d158":si===cur?"#0a84ff":t.text4,fontSize:10,fontWeight:600,fontFamily:t.sm,textAlign:"center"}}>{s}</div>
           </div>
         ))}
       </div>
       {step==="pick"&&<div className="fade-up">
         <div style={{background:t.bg2,borderRadius:20,padding:"38px 18px",textAlign:"center",border:`2px dashed ${t.bg4}`,marginBottom:14}}>
           <div style={{fontSize:48,marginBottom:10}}>👁️</div>
-          <div style={{color:t.text,fontSize:17,fontWeight:600,fontFamily:t.sf,marginBottom:5}}>Photo de fond d'œil</div>
-          <div style={{color:t.text3,fontSize:13,fontFamily:t.sm,lineHeight:1.6}}>Importez une rétinographie depuis votre galerie.</div>
+          <div style={{color:t.text,fontSize:17,fontWeight:600,fontFamily:t.sf,marginBottom:5}}>{i.scan_photo_title}</div>
+          <div style={{color:t.text3,fontSize:13,fontFamily:t.sm,lineHeight:1.6}}>{i.scan_photo_desc}</div>
         </div>
         <input ref={fileRef} type="file" accept="image/*" onChange={e=>load(e.target.files[0])} style={{display:"none"}}/>
         <input ref={camRef} type="file" accept="image/*" capture="environment" onChange={e=>load(e.target.files[0])} style={{display:"none"}}/>
         <div style={{display:"flex",gap:10,marginBottom:12}}>
-          <button onClick={()=>fileRef.current.click()} style={{flex:1,padding:"13px 0",borderRadius:13,border:`1px solid ${t.bg4}`,background:t.bg2,color:t.text,fontFamily:t.sm,fontSize:14,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:7}}>🖼️ Galerie</button>
-          <button onClick={()=>camRef.current.click()} style={{flex:1,padding:"13px 0",borderRadius:13,border:`1px solid ${t.bg4}`,background:t.bg2,color:t.text,fontFamily:t.sm,fontSize:14,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:7}}>📷 Caméra</button>
+          <button onClick={()=>fileRef.current.click()} style={{flex:1,padding:"13px 0",borderRadius:13,border:`1px solid ${t.bg4}`,background:t.bg2,color:t.text,fontFamily:t.sm,fontSize:14,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:7}}>{i.scan_gallery}</button>
+          <button onClick={()=>camRef.current.click()} style={{flex:1,padding:"13px 0",borderRadius:13,border:`1px solid ${t.bg4}`,background:t.bg2,color:t.text,fontFamily:t.sm,fontSize:14,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:7}}>{i.scan_camera}</button>
         </div>
-        <InfoBox color="#0a84ff" text="Utilisez une vraie rétinographie (fond d'œil), pas une photo frontale de l'œil."/>
+        <InfoBox color="#0a84ff" text={i.scan_info}/>
       </div>}
       {step==="preview"&&<div className="fade-up">
         <img src={img} alt="" style={{width:"100%",borderRadius:18,objectFit:"contain",maxHeight:280,background:"#111",display:"block",marginBottom:12}}/>
         {err&&<div style={{color:"#ff453a",fontSize:13,fontFamily:t.sm,background:"rgba(255,69,58,.1)",borderRadius:10,padding:"10px 13px",marginBottom:10}}>{err}</div>}
         <div style={{display:"flex",gap:10}}>
-          <button onClick={()=>{setImg(null);setB64(null);setStep("pick");setErr("");}} style={{flex:1,padding:"13px 0",borderRadius:13,border:`1px solid ${t.bg4}`,background:t.bg2,color:t.text,fontFamily:t.sm,fontSize:14,cursor:"pointer"}}>Changer</button>
-          <button onClick={analyze} style={{flex:2,padding:"13px 0",borderRadius:13,border:"none",background:"#0a84ff",color:"#fff",fontFamily:t.sm,fontSize:15,fontWeight:700,cursor:"pointer",boxShadow:"0 4px 14px rgba(10,132,255,.35)"}}>Analyser →</button>
+          <button onClick={()=>{setImg(null);setB64(null);setStep("pick");setErr("");}} style={{flex:1,padding:"13px 0",borderRadius:13,border:`1px solid ${t.bg4}`,background:t.bg2,color:t.text,fontFamily:t.sm,fontSize:14,cursor:"pointer"}}>{i.scan_change}</button>
+          <button onClick={analyze} style={{flex:2,padding:"13px 0",borderRadius:13,border:"none",background:"#0a84ff",color:"#fff",fontFamily:t.sm,fontSize:15,fontWeight:700,cursor:"pointer",boxShadow:"0 4px 14px rgba(10,132,255,.35)"}}>{i.scan_analyze}</button>
         </div>
       </div>}
       {step==="analyzing"&&<div style={{display:"flex",flexDirection:"column",alignItems:"center",paddingTop:50,gap:20}} className="fade-up">
@@ -586,8 +694,8 @@ function ScanScreen({user,onDone}){
           <div style={{width:50,height:50,borderRadius:"50%",border:`3px solid ${t.bg3}`}}/>
           <div style={{position:"absolute",inset:0,borderRadius:"50%",border:"3px solid transparent",borderTopColor:"#0a84ff",animation:"spin 1s linear infinite"}}/>
         </div>
-        <div style={{color:t.text,fontSize:17,fontWeight:600,fontFamily:t.sf}}>Analyse en cours…</div>
-        <div style={{color:t.text3,fontSize:13,fontFamily:t.sm}}>L'IA examine votre rétinographie</div>
+        <div style={{color:t.text,fontSize:17,fontWeight:600,fontFamily:t.sf}}>{i.scan_analyzing}</div>
+        <div style={{color:t.text3,fontSize:13,fontFamily:t.sm}}>{i.scan_ai}</div>
       </div>}
       {step==="result"&&res&&(()=>{
         const info=ICDR[Math.min(Math.max(res.icdr_level,0),4)];
@@ -595,12 +703,12 @@ function ScanScreen({user,onDone}){
           <div className="fade-up">
             {img&&<img src={img} alt="" style={{width:"100%",borderRadius:18,objectFit:"contain",maxHeight:200,background:"#111",display:"block",marginBottom:12}}/>}
             <div style={{background:info.bg,borderRadius:20,padding:"16px",border:`1px solid ${info.color}44`,marginBottom:12}}>
-              <div style={{color:info.color,fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:1,fontFamily:t.sm,marginBottom:7}}>Résultat ICDR</div>
+              <div style={{color:info.color,fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:1,fontFamily:t.sm,marginBottom:7}}>{i.scan_result_title}</div>
               <div style={{display:"flex",alignItems:"center",gap:11,marginBottom:9}}>
                 <span style={{fontSize:38}}>{info.emoji}</span>
                 <div>
                   <div style={{color:t.text,fontSize:19,fontWeight:700,fontFamily:t.sf}}>{info.label}</div>
-                  <div style={{color:info.color,fontSize:12,fontFamily:t.sm}}>Niveau {res.icdr_level}/4 · Confiance {res.confidence}%</div>
+                  <div style={{color:info.color,fontSize:12,fontFamily:t.sm}}>{i.scan_level} {res.icdr_level}/4 · {i.scan_confidence} {res.confidence}%</div>
                 </div>
               </div>
               <div style={{display:"flex",gap:3,marginBottom:10}}>{ICDR.map((_,i)=><div key={i} style={{flex:1,height:4,borderRadius:2,background:i<=res.icdr_level?info.color:t.bg4}}/>)}</div>
@@ -609,15 +717,15 @@ function ScanScreen({user,onDone}){
               </div>
             </div>
             {res.findings&&res.findings.length>0&&<Card style={{marginBottom:12}}>
-              <div style={{color:t.text3,fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:9,fontFamily:t.sm}}>Signes observés</div>
+              <div style={{color:t.text3,fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:9,fontFamily:t.sm}}>{i.scan_findings}</div>
               <div style={{display:"flex",flexWrap:"wrap",gap:6}}>{res.findings.map((f,i)=><span key={i} style={{background:t.bg3,color:t.text2,borderRadius:20,padding:"4px 11px",fontSize:12,fontFamily:t.sm}}>{f}</span>)}</div>
             </Card>}
             {res.icdr_level>=3&&<div style={{background:"rgba(255,69,58,.1)",borderRadius:13,padding:"12px 13px",border:"1px solid rgba(255,69,58,.25)",marginBottom:12}}>
-              <div style={{color:"#ff453a",fontSize:13,fontFamily:t.sm,lineHeight:1.5,marginBottom:9}}>⚠️ Résultat nécessitant une consultation ophtalmologique urgente.</div>
-              <a href="https://www.doctolib.fr/ophtalmologue" target="_blank" rel="noopener noreferrer" style={{display:"block",textDecoration:"none",width:"100%",padding:"11px 0",borderRadius:11,background:"#ff453a",color:"#fff",fontSize:14,fontWeight:700,fontFamily:t.sm,textAlign:"center"}}>🏥 Prendre RDV sur Doctolib →</a>
+              <div style={{color:"#ff453a",fontSize:13,fontFamily:t.sm,lineHeight:1.5,marginBottom:9}}>{i.scan_urgent}</div>
+              <a href="https://www.doctolib.fr/ophtalmologue" target="_blank" rel="noopener noreferrer" style={{display:"block",textDecoration:"none",width:"100%",padding:"11px 0",borderRadius:11,background:"#ff453a",color:"#fff",fontSize:14,fontWeight:700,fontFamily:t.sm,textAlign:"center"}}>{i.scan_doctolib}</a>
             </div>}
-            <div style={{color:t.text4,fontSize:11,fontFamily:t.sm,textAlign:"center",marginBottom:11}}>Analysé en {elapsed}s · Outil de sensibilisation — pas un diagnostic</div>
-            <PrimaryBtn label="✓ Enregistrer dans mon historique" onClick={save} color="#30d158"/>
+            <div style={{color:t.text4,fontSize:11,fontFamily:t.sm,textAlign:"center",marginBottom:11}}>{i.scan_footer(elapsed)}</div>
+            <PrimaryBtn label={i.scan_save} onClick={save} color="#30d158"/>
           </div>
         );
       })()}
@@ -628,7 +736,7 @@ function ScanScreen({user,onDone}){
 
 // ── HISTORY ───────────────────────────────────────────────────
 function HistoryScreen({scans,glycLogs,onScanDetail}){
-  const t=useTheme();
+  const t=useTheme(); const lang=useLang(); const i=I18N[lang]||I18N.fr; const ICDR=getICDR(lang);
   const [filter,setFilter]=useState("all");
   const visionLogs=DB.get("vision_history",[]);
   const all=[
@@ -640,16 +748,16 @@ function HistoryScreen({scans,glycLogs,onScanDetail}){
   return(
     <div style={{padding:"0 16px",background:"transparent",minHeight:"100%",paddingBottom:140}}>
       <div style={{paddingTop:56,paddingBottom:4}}>
-        <div style={{color:t.text,fontSize:30,fontWeight:700,letterSpacing:-.8,fontFamily:t.sf}}>Historique</div>
-        <div style={{color:t.text3,fontSize:13,fontFamily:t.sm,marginTop:2,marginBottom:14}}>{all.length} entrée{all.length!==1?"s":""}</div>
+        <div style={{color:t.text,fontSize:30,fontWeight:700,letterSpacing:-.8,fontFamily:t.sf}}>{i.hist_title}</div>
+        <div style={{color:t.text3,fontSize:13,fontFamily:t.sm,marginTop:2,marginBottom:14}}>{i.hist_entries(all.length)}</div>
       </div>
       <div style={{display:"flex",background:t.bg2,borderRadius:12,padding:3,marginBottom:14,border:`1px solid ${t.border}`}}>
-        {[["all","Tout"],["retina","Rétine"],["glyc","Glycémie"],["vision","Acuité"]].map(([v,l])=>(
+        {[["all",i.hist_all],["retina",i.hist_retina],["glyc",i.hist_glyc],["vision",i.hist_vision]].map(([v,l])=>(
           <button key={v} onClick={()=>setFilter(v)} style={{flex:1,padding:"8px 0",borderRadius:10,border:"none",cursor:"pointer",fontSize:12,fontWeight:600,background:filter===v?t.bg4:"transparent",color:filter===v?t.text:t.text3,fontFamily:t.sm,transition:"all .18s"}}>{l}</button>
         ))}
       </div>
       {shown.length===0
-        ?<Card style={{textAlign:"center",padding:44}}><div style={{fontSize:40,marginBottom:12}}>📋</div><div style={{color:t.text,fontSize:16,fontWeight:600,fontFamily:t.sf,marginBottom:6}}>Aucune entrée</div><div style={{color:t.text3,fontSize:13,fontFamily:t.sm}}>Vos analyses apparaîtront ici.</div></Card>
+        ?<Card style={{textAlign:"center",padding:44}}><div style={{fontSize:40,marginBottom:12}}>📋</div><div style={{color:t.text,fontSize:16,fontWeight:600,fontFamily:t.sf,marginBottom:6}}>{i.hist_empty_title}</div><div style={{color:t.text3,fontSize:13,fontFamily:t.sm}}>{i.hist_empty_desc}</div></Card>
         :shown.map(item=>{
           if(item._k==="retina"){
             const info=ICDR[Math.min(Math.max(item.icdr_level,0),4)];
@@ -674,7 +782,7 @@ function HistoryScreen({scans,glycLogs,onScanDetail}){
               <div key={item.id} style={{background:t.bg2,borderRadius:14,padding:"11px 13px",marginBottom:8,border:`1px solid ${t.border}`,display:"flex",alignItems:"center",gap:11}}>
                 <div style={{width:44,height:44,borderRadius:11,background:"rgba(10,132,255,0.1)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:18}}>👓</div>
                 <div style={{flex:1}}>
-                  <div style={{color:t.text,fontSize:14,fontWeight:600,fontFamily:t.sm}}>Acuité {item.testType==="snellen"?"Snellen":"Parinaud"}</div>
+                  <div style={{color:t.text,fontSize:14,fontWeight:600,fontFamily:t.sm}}>{item.testType==="snellen"?i.hist_snellen:i.hist_parinaud}</div>
                   <div style={{color:t.text3,fontSize:11,fontFamily:t.sm,marginTop:1}}>{new Date(item.date).toLocaleDateString("fr-FR",{day:"numeric",month:"short",year:"numeric"})} · OD {item.OD} · OG {item.OG}</div>
                 </div>
                 {item.best&&<div><span style={{color:col,fontSize:17,fontWeight:700,fontFamily:t.sf}}>{item.best}</span><span style={{color:t.text4,fontSize:11}}>/10</span></div>}
@@ -816,28 +924,20 @@ function VisionScreen({onBack}){
 
 // ── ASSISTANT ─────────────────────────────────────────────────
 function ChatScreen(){
-  const t=useTheme();
+  const t=useTheme(); const lang=useLang(); const i=I18N[lang]||I18N.fr;
   const [open,setOpen]=useState(null);
-  const items=[
-    {q:"Qu'est-ce que la rétinopathie diabétique ?",short:"Rétinopathie",a:"La rétinopathie diabétique (RD) est une complication du diabète touchant les vaisseaux rétiniens. Elle évolue silencieusement avant d'affecter la vision — d'où l'importance du dépistage annuel même sans symptôme.",icon:"👁️",color:"#0a84ff"},
-    {q:"À quoi correspond le score ICDR (0 à 4) ?",short:"Score ICDR",a:"L'ICDR classe la RD de 0 (aucun signe) à 4 (forme proliférante). Niveau 0–1 : contrôle annuel. Niveau 2 : ophtalmologue sous 6 mois. Niveaux 3–4 : consultation urgente.",icon:"📊",color:"#ff9f0a"},
-    {q:"Quelle est la cible de glycémie ?",short:"Glycémie",a:"HbA1c < 7 %. Glycémie à jeun : 0,70–1,26 g/L. Post-prandiale < 1,60 g/L (recommandations HAS 2024). Un équilibre glycémique strict ralentit la progression de la rétinopathie.",icon:"💉",color:"#30d158"},
-    {q:"Quels sont les traitements disponibles ?",short:"Traitements",a:"Selon le stade : laser pan-rétinien (PPR) pour stopper la progression, injections intra-vitréennes anti-VEGF (Ranibizumab, Aflibercept) pour l'œdème maculaire, ou vitrectomie en cas de complications sévères.",icon:"💊",color:"#bf5af2"},
-    {q:"À quelle fréquence faire le fond d'œil ?",short:"Fréquence",a:"Fond d'œil annuel obligatoire dès le diagnostic pour le diabète de type 2. Pour le type 1, à partir de 5 ans d'évolution. En cas de grossesse ou HbA1c déséquilibrée : surveillance plus rapprochée.",icon:"📅",color:"#ff375f"},
-    {q:"Comment prévenir la rétinopathie ?",short:"Prévention",a:"Contrôle glycémique strict (HbA1c < 7 %), pression artérielle < 130/80 mmHg, arrêt du tabac, activité physique régulière et suivi ophtalmologique annuel. La prévention reste le meilleur traitement.",icon:"🛡️",color:"#34c759"},
-    {q:"Mes données sont-elles confidentielles ?",short:"Confidentialité",a:"Vos photos ne sont jamais stockées sur un serveur. Seules des métadonnées anonymisées sont conservées avec votre consentement explicite. Base légale : RGPD Art. 9.2.j — recherche médicale. Hébergement EU (Frankfurt).",icon:"🔒",color:"#ff9f0a"},
-  ];
+  const items=i.faq;
   return(
     <div style={{padding:"0 16px",background:"transparent",minHeight:"100%",paddingBottom:140}}>
       <div style={{paddingTop:56,paddingBottom:4}}>
-        <div style={{color:t.text,fontSize:30,fontWeight:700,letterSpacing:-.8,fontFamily:t.sf}}>Assistant</div>
-        <div style={{color:t.text3,fontSize:13,fontFamily:t.sm,marginTop:2,marginBottom:16}}>Appuyez sur un sujet pour en savoir plus</div>
+        <div style={{color:t.text,fontSize:30,fontWeight:700,letterSpacing:-.8,fontFamily:t.sf}}>{i.tab_chat}</div>
+        <div style={{color:t.text3,fontSize:13,fontFamily:t.sm,marginTop:2,marginBottom:16}}>{i.chat_subtitle}</div>
       </div>
       <Card style={{marginBottom:20,display:"flex",gap:12,alignItems:"center"}}>
         <div style={{width:44,height:44,borderRadius:14,background:"linear-gradient(135deg,#0a84ff,#30d158)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>👁️</div>
         <div>
-          <div style={{color:t.text,fontSize:14,fontWeight:600,fontFamily:t.sm}}>RetinaScore — Outil académique</div>
-          <div style={{color:t.text3,fontSize:12,fontFamily:t.sm,marginTop:2,lineHeight:1.4}}>Ces informations sont indicatives et ne remplacent pas un avis médical.</div>
+          <div style={{color:t.text,fontSize:14,fontWeight:600,fontFamily:t.sm}}>{i.chat_tool}</div>
+          <div style={{color:t.text3,fontSize:12,fontFamily:t.sm,marginTop:2,lineHeight:1.4}}>{i.chat_disclaimer_inline}</div>
         </div>
       </Card>
       {/* Bulles interactives */}
@@ -880,7 +980,7 @@ function ChatScreen(){
           <div style={{color:t.text2,fontSize:13,fontFamily:t.sm,lineHeight:1.65}}>{items[open].a}</div>
         </div>
       )}
-      <div style={{color:t.text4,fontSize:10,fontFamily:t.sm,textAlign:"center",marginTop:8}}>Pas un avis médical · Sources : HAS 2024 · SFO</div>
+      <div style={{color:t.text4,fontSize:10,fontFamily:t.sm,textAlign:"center",marginTop:8}}>{i.chat_footer}</div>
     </div>
   );
 }
@@ -888,7 +988,7 @@ function ChatScreen(){
 
 // ── PROFILE ───────────────────────────────────────────────────
 function ProfileScreen({user,scans,onDelete,onLogout,onShowAuth,onUpdateConsent,detail,setDetail}){
-  const t=useTheme();
+  const t=useTheme(); const lang=useLang(); const ICDR=getICDR(lang);
   if(detail){
     const info=ICDR[Math.min(Math.max(detail.icdr_level,0),4)];
     return(
