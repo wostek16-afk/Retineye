@@ -2,6 +2,71 @@ import { useState, useRef, useEffect, createContext, useContext } from "react";
 
 const ThemeCtx = createContext(null);
 const useTheme = () => useContext(ThemeCtx);
+const LangCtx = createContext("fr");
+const useLang = () => useContext(LangCtx);
+
+const I18N = {
+  fr:{
+    tab_home:"Résumé",tab_scan:"Dépistage",tab_history:"Historique",tab_chat:"Assistant",tab_profile:"Profil",
+    settings:"Réglages",appearance:"Apparence",dark_mode:"Mode sombre",dark_on:"Activé",dark_off:"Désactivé",
+    lang_label:"Langue",
+    privacy_title:"Données & Confidentialité",
+    photo_label:"Photos",photo_desc:"Analysées localement · Aucune conservation",
+    analyses_label:"Analyses",analyses_desc:"Métadonnées anonymisées si consentement",
+    legal_label:"Base légale",legal_desc:"RGPD Art. 9.2.j · Recherche médicale",
+    hosting_label:"Hébergement",hosting_desc:"Serveurs EU (Frankfurt)",
+    about_title:"À propos",version_label:"Version",version_val:"bêta · Mars 2026",
+    author_label:"Auteur",author_val:"Siouala Ramy",
+    compliance_label:"Conformité",compliance_val:"RGPD · HDS · CE marquage en cours",
+    reset_btn:"Réinitialiser les données",
+    disclaimer:"Outil de sensibilisation académique. Ne constitue pas un dispositif médical réglementé.",
+  },
+  en:{
+    tab_home:"Summary",tab_scan:"Screening",tab_history:"History",tab_chat:"Assistant",tab_profile:"Profile",
+    settings:"Settings",appearance:"Appearance",dark_mode:"Dark mode",dark_on:"On",dark_off:"Off",
+    lang_label:"Language",
+    privacy_title:"Data & Privacy",
+    photo_label:"Photos",photo_desc:"Analysed locally · No retention",
+    analyses_label:"Analyses",analyses_desc:"Anonymised metadata if consent given",
+    legal_label:"Legal basis",legal_desc:"GDPR Art. 9.2.j · Medical research",
+    hosting_label:"Hosting",hosting_desc:"EU servers (Frankfurt)",
+    about_title:"About",version_label:"Version",version_val:"beta · March 2026",
+    author_label:"Author",author_val:"Siouala Ramy",
+    compliance_label:"Compliance",compliance_val:"GDPR · HDS · CE marking in progress",
+    reset_btn:"Reset all data",
+    disclaimer:"Academic awareness tool. Not a regulated medical device.",
+  },
+  de:{
+    tab_home:"Übersicht",tab_scan:"Screening",tab_history:"Verlauf",tab_chat:"Assistent",tab_profile:"Profil",
+    settings:"Einstellungen",appearance:"Darstellung",dark_mode:"Dunkelmodus",dark_on:"An",dark_off:"Aus",
+    lang_label:"Sprache",
+    privacy_title:"Daten & Datenschutz",
+    photo_label:"Fotos",photo_desc:"Lokal analysiert · Keine Speicherung",
+    analyses_label:"Analysen",analyses_desc:"Anonymisierte Metadaten bei Einwilligung",
+    legal_label:"Rechtsgrundlage",legal_desc:"DSGVO Art. 9.2.j · Medizinische Forschung",
+    hosting_label:"Hosting",hosting_desc:"EU-Server (Frankfurt)",
+    about_title:"Über",version_label:"Version",version_val:"Beta · März 2026",
+    author_label:"Autor",author_val:"Siouala Ramy",
+    compliance_label:"Konformität",compliance_val:"DSGVO · HDS · CE-Kennzeichnung laufend",
+    reset_btn:"Alle Daten zurücksetzen",
+    disclaimer:"Akademisches Sensibilisierungstool. Kein zugelassenes Medizinprodukt.",
+  },
+  ro:{
+    tab_home:"Rezumat",tab_scan:"Screening",tab_history:"Istoric",tab_chat:"Asistent",tab_profile:"Profil",
+    settings:"Setări",appearance:"Aspect",dark_mode:"Mod întunecat",dark_on:"Activat",dark_off:"Dezactivat",
+    lang_label:"Limbă",
+    privacy_title:"Date & Confidențialitate",
+    photo_label:"Fotografii",photo_desc:"Analizate local · Fără stocare",
+    analyses_label:"Analize",analyses_desc:"Metadate anonimizate cu consimțământ",
+    legal_label:"Temei legal",legal_desc:"GDPR Art. 9.2.j · Cercetare medicală",
+    hosting_label:"Găzduire",hosting_desc:"Servere UE (Frankfurt)",
+    about_title:"Despre",version_label:"Versiune",version_val:"beta · Martie 2026",
+    author_label:"Autor",author_val:"Siouala Ramy",
+    compliance_label:"Conformitate",compliance_val:"GDPR · HDS · Marcare CE în curs",
+    reset_btn:"Resetați datele",
+    disclaimer:"Instrument academic de sensibilizare. Nu este un dispozitiv medical reglementat.",
+  },
+};
 
 const STORE_KEY = "_rs8_data";
 const _loadStore = () => { try { return JSON.parse(localStorage.getItem(STORE_KEY)||"{}"); } catch { return {}; } };
@@ -158,9 +223,10 @@ function Spark({values,color}){
 
 // ── Tab Bar ────────────────────────────────────────────────────
 function TabBar({tab,set}){
+  const i=I18N[useLang()]||I18N.fr;
   const t=useTheme();
   const tColor={home:"#30d158",scan:"#0a84ff",history:"#ff9f0a",chat:"#ff9f0a",profile:"#8e8e93"};
-  const tabs=[{id:"home",label:"Résumé"},{id:"scan",label:"Dépistage"},{id:"history",label:"Historique"},{id:"chat",label:"Assistant"},{id:"profile",label:"Profil"}];
+  const tabs=[{id:"home",label:i.tab_home},{id:"scan",label:i.tab_scan},{id:"history",label:i.tab_history},{id:"chat",label:i.tab_chat},{id:"profile",label:i.tab_profile}];
   const icons={
     home:<svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>,
     scan:<svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx={12} cy={12} r={3}/></svg>,
@@ -915,51 +981,69 @@ function ProfileScreen({user,scans,onDelete,onLogout,onShowAuth,onUpdateConsent,
   );
 }
 
+const LANGS=[{code:"fr",flag:"🇫🇷",label:"Français"},{code:"en",flag:"🇬🇧",label:"English"},{code:"de",flag:"🇩🇪",label:"Deutsch"},{code:"ro",flag:"🇷🇴",label:"Română"}];
+
 // ── SETTINGS ──────────────────────────────────────────────────
-function SettingsScreen({onBack,darkMode,setDarkMode,onReset}){
+function SettingsScreen({onBack,darkMode,setDarkMode,onReset,lang,setLang}){
   const t=useTheme();
+  const i=I18N[lang]||I18N.fr;
   return(
     <div style={{padding:"0 16px",background:"transparent",minHeight:"100%",paddingBottom:140}}>
       <div style={{paddingTop:56,paddingBottom:4}}>
-        <BackBtn onBack={onBack} label="Résumé"/>
-        <div style={{color:t.text,fontSize:30,fontWeight:700,letterSpacing:-.8,fontFamily:t.sf}}>Réglages</div>
+        <BackBtn onBack={onBack} label={i.tab_home}/>
+        <div style={{color:t.text,fontSize:30,fontWeight:700,letterSpacing:-.8,fontFamily:t.sf}}>{i.settings}</div>
       </div>
-      <SecTitle mt={22}>Apparence</SecTitle>
+      <SecTitle mt={22}>{i.appearance}</SecTitle>
       <Card style={{marginBottom:12}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
           <div style={{display:"flex",alignItems:"center",gap:12}}>
             <div style={{width:34,height:34,borderRadius:10,background:"rgba(255,214,10,.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>{darkMode?"🌙":"☀️"}</div>
-            <div><div style={{color:t.text,fontSize:15,fontWeight:600,fontFamily:t.sm}}>Mode sombre</div><div style={{color:t.text3,fontSize:12,fontFamily:t.sm,marginTop:1}}>{darkMode?"Activé":"Désactivé"}</div></div>
+            <div><div style={{color:t.text,fontSize:15,fontWeight:600,fontFamily:t.sm}}>{i.dark_mode}</div><div style={{color:t.text3,fontSize:12,fontFamily:t.sm,marginTop:1}}>{darkMode?i.dark_on:i.dark_off}</div></div>
           </div>
           <div onClick={()=>setDarkMode(!darkMode)} style={{width:50,height:30,borderRadius:15,background:darkMode?"#30d158":"rgba(120,120,128,0.32)",cursor:"pointer",position:"relative",transition:"background .25s",flexShrink:0}}>
             <div style={{width:26,height:26,borderRadius:"50%",background:"#fff",position:"absolute",top:2,left:darkMode?22:2,transition:"left .25s",boxShadow:"0 2px 6px rgba(0,0,0,0.25)"}}/>
           </div>
         </div>
       </Card>
-      <SecTitle>Données & Confidentialité</SecTitle>
       <Card style={{marginBottom:12}}>
-        {[["📷","Photos","Jamais stockées sur serveur","#30d158"],["📊","Analyses","Métadonnées anonymisées si consentement","#0a84ff"],["⚖️","Base légale","RGPD Art. 9.2.j · Recherche médicale","#ffd60a"],["🌍","Hébergement","Serveurs EU (Frankfurt)","#30d158"]].map(([ico,l,d,c])=>(
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
+          <div style={{width:34,height:34,borderRadius:10,background:"rgba(10,132,255,.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>🌐</div>
+          <div style={{color:t.text,fontSize:15,fontWeight:600,fontFamily:t.sm}}>{i.lang_label}</div>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+          {LANGS.map(({code,flag,label})=>(
+            <div key={code} onClick={()=>setLang(code)} style={{display:"flex",alignItems:"center",gap:8,padding:"9px 12px",borderRadius:11,border:`1px solid ${lang===code?"#0a84ff44":t.border}`,background:lang===code?"rgba(10,132,255,.12)":t.glass,cursor:"pointer",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)"}}>
+              <span style={{fontSize:18}}>{flag}</span>
+              <span style={{color:lang===code?"#0a84ff":t.text,fontSize:13,fontWeight:lang===code?700:500,fontFamily:t.sm}}>{label}</span>
+              {lang===code&&<div style={{marginLeft:"auto",width:7,height:7,borderRadius:"50%",background:"#0a84ff",flexShrink:0}}/>}
+            </div>
+          ))}
+        </div>
+      </Card>
+      <SecTitle>{i.privacy_title}</SecTitle>
+      <Card style={{marginBottom:12}}>
+        {[["📷",i.photo_label,i.photo_desc,"#30d158"],["📊",i.analyses_label,i.analyses_desc,"#0a84ff"],["⚖️",i.legal_label,i.legal_desc,"#ffd60a"],["🌍",i.hosting_label,i.hosting_desc,"#30d158"]].map(([ico,l,d,c])=>(
           <div key={l} style={{display:"flex",gap:12,marginBottom:10,alignItems:"flex-start"}}>
             <div style={{width:30,height:30,borderRadius:9,background:c+"18",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,flexShrink:0}}>{ico}</div>
             <div><div style={{color:t.text,fontSize:13,fontWeight:600,fontFamily:t.sm}}>{l}</div><div style={{color:t.text3,fontSize:11,fontFamily:t.sm,marginTop:1,lineHeight:1.4}}>{d}</div></div>
           </div>
         ))}
       </Card>
-      <SecTitle>À propos</SecTitle>
+      <SecTitle>{i.about_title}</SecTitle>
       <Card>
-        {[["Version","8.0 · Mars 2026"],["Auteur","Thèse médecine ophtalmo"],["Conformité","RGPD · HDS · CE marquage en cours"]].map(([l,v])=>(
+        {[[i.version_label,i.version_val],[i.author_label,i.author_val],[i.compliance_label,i.compliance_val]].map(([l,v])=>(
           <div key={l} style={{display:"flex",justifyContent:"space-between",alignItems:"center",paddingBottom:9,marginBottom:9,borderBottom:`1px solid ${t.bg3}`}}>
             <span style={{color:t.text3,fontSize:13,fontFamily:t.sm}}>{l}</span>
             <span style={{color:t.text,fontSize:13,fontFamily:t.sm,fontWeight:500}}>{v}</span>
           </div>
         ))}
-        <div style={{color:t.text4,fontSize:11,fontFamily:t.sm,lineHeight:1.5,marginTop:4}}>Outil de sensibilisation académique. Ne constitue pas un dispositif médical réglementé.</div>
+        <div style={{color:t.text4,fontSize:11,fontFamily:t.sm,lineHeight:1.5,marginTop:4}}>{i.disclaimer}</div>
       </Card>
       <button
         onClick={onReset}
         style={{width:"100%",marginTop:32,padding:"15px 0",background:"rgba(255,59,48,0.15)",border:"1px solid rgba(255,59,48,0.30)",borderRadius:14,color:"#ff3b30",fontSize:16,fontWeight:700,fontFamily:t.sm,cursor:"pointer",letterSpacing:-.2,backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)"}}
       >
-        Réinitialiser les données
+        {i.reset_btn}
       </button>
     </div>
   );
@@ -1211,8 +1295,12 @@ function ConsentScreen({onAccept,onDecline}){
 
 // ── APP ROOT ──────────────────────────────────────────────────
 export default function App(){
-  const [darkMode,setDarkMode]=useState(false); // default light
+  const [darkMode,setDarkMode]=useState(()=>DB.get("darkMode",false));
+  const [lang,setLang]=useState(()=>DB.get("lang","fr"));
   const t=darkMode?DARK:LIGHT;
+
+  useEffect(()=>{DB.set("darkMode",darkMode);},[darkMode]);
+  useEffect(()=>{DB.set("lang",lang);},[lang]);
 
   const [screen,setScreen]=useState("landing");
   const [tab,setTab]=useState("home");
@@ -1223,38 +1311,10 @@ export default function App(){
   const [showAuth,setShowAuth]=useState(false);
   const [subScreen,setSubScreen]=useState(null);
   const [detail,setDetail]=useState(null);
-  const [notif,setNotif]=useState(null);
   const [screenKey,setScreenKey]=useState(0);
 
   useEffect(()=>{DB.set("guest_scans",scans);},[scans]);
   useEffect(()=>{DB.set("guest_glyc",glycLogs);},[glycLogs]);
-
-  // Smart notifications on mount
-  useEffect(()=>{
-    const today=new Date().toISOString().slice(0,10);
-    const rdvs=DB.get("rdvs",[]);
-    const upcoming=rdvs.filter(r=>r.date>=today).sort((a,b)=>a.date.localeCompare(b.date));
-    if(upcoming.length>0){
-      const next=upcoming[0];
-      const days=Math.ceil((new Date(next.date+"T12:00")-Date.now())/86400000);
-      if(days<=7){
-        setTimeout(()=>setNotif({icon:"📅",color:"#0a84ff",title:days===0?"RDV aujourd'hui !":days===1?"RDV demain":"RDV dans "+days+" jours",body:next.type+(next.note?" · "+next.note:""),action:()=>{setSubScreen("rdv");setNotif(null);}}),800);
-        return;
-      }
-    }
-    const hasFO=rdvs.some(r=>r.date>=today&&(r.type==="Fond d'œil"||r.type==="Ophtalmologue"));
-    if(!hasFO){
-      const lastScan=DB.get("guest_scans",[]);
-      const daysSinceScan=lastScan[0]?Math.floor((Date.now()-new Date(lastScan[0].date))/86400000):999;
-      if(daysSinceScan>300){
-        setTimeout(()=>setNotif({icon:"👁️",color:"#ff9f0a",title:"Fond d'œil annuel",body:"Aucun RDV ophtalmologique programmé. Planifiez votre contrôle.",action:()=>{setSubScreen("rdv");setNotif(null);}}),1200);
-      }
-    }
-    const glycToday=DB.get("guest_glyc",[]).filter(g=>g.date===today);
-    if(glycToday.length===0&&new Date().getHours()>=9){
-      setTimeout(()=>setNotif({icon:"💉",color:"#30d158",title:"Glycémie du jour",body:"Vous n'avez pas encore enregistré de mesure aujourd'hui.",action:()=>{setSubScreen("glycemia");setNotif(null);}}),2000);
-    }
-  },[]);
 
   const login=u=>{setUser(u);setScreen("app");setShowAuth(false);};
   const logout=()=>{DB.del("sess");setUser(null);setScans([]);setGlycLogs([]);setScreen("landing");};
@@ -1277,7 +1337,7 @@ export default function App(){
   };
 
   const renderMain=()=>{
-    if(subScreen==="settings") return <SettingsScreen onBack={()=>setSubScreen(null)} darkMode={darkMode} setDarkMode={setDarkMode} onReset={resetAllData}/>;
+    if(subScreen==="settings") return <SettingsScreen onBack={()=>setSubScreen(null)} darkMode={darkMode} setDarkMode={setDarkMode} onReset={resetAllData} lang={lang} setLang={setLang}/>;
     if(subScreen==="glycemia") return <GlycemiaScreen glycLogs={glycLogs} onSave={g=>{addGlyc(g);}} onBack={()=>setSubScreen(null)}/>;
     if(subScreen==="vision") return <VisionScreen onBack={()=>setSubScreen(null)}/>;
     if(subScreen==="rdv") return <RDVScreen onBack={()=>setSubScreen(null)}/>;
@@ -1308,6 +1368,7 @@ export default function App(){
   // ── Main app
   return(
     <ThemeCtx.Provider value={t}>
+    <LangCtx.Provider value={lang}>
       {/* Global keyframe injection */}
       <style>{`
         @keyframes spin{to{transform:rotate(360deg)}}
@@ -1320,8 +1381,6 @@ export default function App(){
         .fade-up-3{animation:fadeUp .38s .22s cubic-bezier(.25,.46,.45,.94) both}
         @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
         @keyframes screenIn{from{opacity:0;transform:translateY(10px) scale(0.99)}to{opacity:1;transform:translateY(0) scale(1)}}
-        @keyframes notifDrop{from{opacity:0;transform:translateY(-20px) scale(0.96)}to{opacity:1;transform:translateY(0) scale(1)}}
-        .notif-in{animation:notifDrop .35s cubic-bezier(.25,.46,.45,.94) both}
       `}</style>
 
       <div style={{
@@ -1335,29 +1394,6 @@ export default function App(){
         position:"relative",
         overflow:"hidden",
       }}>
-        {/* ── Smart notification banner (Apple-style glass drop) */}
-        {notif&&(
-          <div className="notif-in" style={{position:"absolute",top:0,left:0,right:0,zIndex:1500,padding:"50px 12px 0",pointerEvents:"none",display:"flex",justifyContent:"center"}}>
-            <div onClick={notif.action} style={{
-              pointerEvents:"all",
-              maxWidth:430,width:"100%",
-              background:t.isDark?"rgba(28,28,30,0.94)":"rgba(255,255,255,0.96)",
-              backdropFilter:"blur(30px) saturate(180%)",
-              WebkitBackdropFilter:"blur(30px) saturate(180%)",
-              borderRadius:18,padding:"12px 14px",
-              border:`1px solid ${notif.color}33`,
-              boxShadow:`0 4px 28px rgba(0,0,0,0.2), 0 0 0 1px ${notif.color}22`,
-              display:"flex",gap:11,alignItems:"center",cursor:"pointer",
-            }}>
-              <div style={{width:38,height:38,borderRadius:11,background:notif.color+"18",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{notif.icon}</div>
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{color:t.text,fontSize:13,fontWeight:700,fontFamily:t.sm}}>{notif.title}</div>
-                <div style={{color:t.text3,fontSize:12,fontFamily:t.sm,marginTop:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{notif.body}</div>
-              </div>
-              <button onClick={e=>{e.stopPropagation();setNotif(null);}} style={{background:"none",border:"none",color:t.text4,fontSize:20,cursor:"pointer",padding:"0 2px",flexShrink:0}}>×</button>
-            </div>
-          </div>
-        )}
 
         {/* ── Scrollable screen area — content scrolls UNDER the glass tab bar */}
         <div
@@ -1380,6 +1416,7 @@ export default function App(){
         {/* ── Auth modal */}
         {showAuth&&<AuthModal mode={authMode} onClose={()=>setShowAuth(false)} onLogin={login}/>}
       </div>
+    </LangCtx.Provider>
     </ThemeCtx.Provider>
   );
 }
