@@ -464,41 +464,14 @@ function ScanScreen({user,onDone}){
     if(!resp.ok) throw new Error("backend_error");
     return await resp.json();
   };
-  const analyzeViaClientKey=async()=>{
-    const clientKey=DB.get("claudeApiKey","");
-    if(!clientKey) throw new Error("no_key");
-    const PROMPT="Analyze this retinal fundus photo for diabetic retinopathy using ICDR scale 0-4. Return ONLY valid minified JSON with these keys: icdr_level (int 0-4), findings (short French string array max 4 items), confidence (int 50-99), notes (one French patient-facing sentence). No markdown no extra text.";
-    const body={model:"claude-sonnet-4-20250514",max_tokens:350,messages:[{role:"user",content:[{type:"image",source:{type:"base64",media_type:"image/jpeg",data:b64}},{type:"text",text:PROMPT}]}]};
-    const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":clientKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify(body)});
-    const d=await r.json();
-    const txt=(d.content||[]).map(b=>b.text||"").join("");
-    return JSON.parse(txt.replace(/```json|```/g,"").trim());
-  };
-  const analyzeViaClaude=async()=>{
-    // Essaie le backend Railway (clé serveur), sinon fallback clé locale
-    try{
-      const resp=await fetch(`${getBase()}/analyze-claude`,{
-        method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({image:b64}),
-        signal:AbortSignal.timeout(30000),
-      });
-      if(resp.ok) return await resp.json();
-    }catch{/* Railway down ou timeout → on tente la clé locale */}
-    return await analyzeViaClientKey();
-  };
   const analyze=async()=>{
     setStep("analyzing");setErr("");const t0=Date.now();
     try{
-      let parsed;
-      try{ parsed=await analyzeLocal(); }
-      catch{ parsed=await analyzeViaClaude(); }
+      const parsed=await analyzeLocal();
       setElapsed(((Date.now()-t0)/1000).toFixed(1));
       setRes(parsed);setStep("result");
     }catch(e){
-      const hasKey=!!DB.get("claudeApiKey","");
-      setErr(hasKey
-        ?"Analyse impossible. Vérifiez votre connexion et la clé API Claude dans Réglages."
-        :"Analyse impossible. Configurez une clé API Claude dans Réglages, ou vérifiez que le serveur Railway est en ligne.");
+      setErr("Analyse impossible. Vérifiez que le serveur Railway est en ligne.");
       setStep("preview");
     }
   };
