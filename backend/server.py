@@ -274,7 +274,7 @@ def analyze(req: AnalyzeRequest):
     if model is None:
         raise HTTPException(
             status_code=503,
-            detail="Modèle non chargé — placer best_model_v2.pth dans le dossier backend/",
+            detail="Modèle en cours de chargement — réessayez dans quelques secondes.",
         )
     try:
         img_bytes = base64.b64decode(req.image)
