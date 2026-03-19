@@ -145,7 +145,7 @@ def _load_model_sync():
             try:
                 hf_token = os.environ.get("HF_TOKEN", "")
                 headers = {"Authorization": f"Bearer {hf_token}"} if hf_token else {}
-                # requests gère les redirects HuggingFace→S3 correctement
+                # requests gère les redirects HuggingFace→S3 correctement (urllib perd l'auth header)
                 with http_client.get(model_url, headers=headers, stream=True, timeout=300) as resp:
                     resp.raise_for_status()
                     total = int(resp.headers.get("content-length", 0))
@@ -160,12 +160,11 @@ def _load_model_sync():
                 print(f"✅ Modèle téléchargé dans {MODEL_PATH}")
             except Exception as e:
                 print(f"❌ Erreur téléchargement modèle : {e}")
-                # Supprimer le fichier partiel si présent
                 if os.path.exists(MODEL_PATH):
                     os.remove(MODEL_PATH)
                 return
         else:
-            print(f"⚠️  best_model_v2.pth introuvable. Définissez MODEL_URL + HF_TOKEN pour le téléchargement automatique.")
+            print(f"⚠️  best_model_v2.pth introuvable. Définissez MODEL_URL + HF_TOKEN.")
             return
     try:
         checkpoint = torch.load(MODEL_PATH, map_location=device, weights_only=False)
