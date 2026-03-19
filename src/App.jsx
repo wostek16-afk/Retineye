@@ -53,7 +53,7 @@ const FAQ=[
 ];
 
 const DARK={isDark:true,bg:"transparent",bg2:"rgba(28,28,30,0.88)",bg3:"rgba(44,44,46,0.82)",bg4:"#3a3a3c",text:"#ffffff",text2:"rgba(235,235,245,0.85)",text3:"#8e8e93",text4:"#48484a",border:"rgba(255,255,255,0.08)",glass:"rgba(255,255,255,0.07)",glassBorder:"rgba(255,255,255,0.16)",glassHigh:"rgba(255,255,255,0.10)",glassShadow:"0 8px 32px rgba(0,0,0,0.5),inset 0 1px 0 rgba(255,255,255,0.14)",sf:"'SF Pro Display',-apple-system,BlinkMacSystemFont,system-ui,sans-serif",sm:"'SF Pro Text',-apple-system,BlinkMacSystemFont,system-ui,sans-serif"};
-const LIGHT={isDark:false,bg:"transparent",bg2:"rgba(255,255,255,0.82)",bg3:"rgba(242,242,247,0.78)",bg4:"#e5e5ea",text:"#000000",text2:"#1c1c1e",text3:"#636366",text4:"#aeaeb2",border:"rgba(0,0,0,0.07)",glass:"rgba(255,255,255,0.60)",glassBorder:"rgba(255,255,255,0.88)",glassHigh:"rgba(255,255,255,0.78)",glassShadow:"0 8px 32px rgba(0,0,0,0.10),inset 0 1px 0 rgba(255,255,255,0.95)",sf:"'SF Pro Display',-apple-system,BlinkMacSystemFont,system-ui,sans-serif",sm:"'SF Pro Text',-apple-system,BlinkMacSystemFont,system-ui,sans-serif"};
+const LIGHT={isDark:false,bg:"transparent",bg2:"rgba(255,255,255,0.55)",bg3:"rgba(242,242,247,0.50)",bg4:"#e5e5ea",text:"#000000",text2:"#1c1c1e",text3:"#636366",text4:"#aeaeb2",border:"rgba(0,0,0,0.07)",glass:"rgba(255,255,255,0.22)",glassBorder:"rgba(255,255,255,0.45)",glassHigh:"rgba(255,255,255,0.38)",glassShadow:"0 8px 32px rgba(0,0,0,0.08),inset 0 1px 0 rgba(255,255,255,0.55)",sf:"'SF Pro Display',-apple-system,BlinkMacSystemFont,system-ui,sans-serif",sm:"'SF Pro Text',-apple-system,BlinkMacSystemFont,system-ui,sans-serif"};
 
 // ── Ring SVG ──────────────────────────────────────────────────
 function Ring({size=130,sw=12,progress=0,color,delay=0}){
@@ -957,7 +957,7 @@ function SettingsScreen({onBack,darkMode,setDarkMode,onReset}){
       </Card>
       <button
         onClick={onReset}
-        style={{width:"100%",marginTop:32,padding:"15px 0",background:"#ff3b30",border:"none",borderRadius:14,color:"#fff",fontSize:16,fontWeight:700,fontFamily:t.sm,cursor:"pointer",letterSpacing:-.2}}
+        style={{width:"100%",marginTop:32,padding:"15px 0",background:"rgba(255,59,48,0.15)",border:"1px solid rgba(255,59,48,0.30)",borderRadius:14,color:"#ff3b30",fontSize:16,fontWeight:700,fontFamily:t.sm,cursor:"pointer",letterSpacing:-.2,backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)"}}
       >
         Réinitialiser les données
       </button>
@@ -1327,7 +1327,7 @@ export default function App(){
       <div style={{
         background:t.isDark
           ?"radial-gradient(ellipse 65% 55% at 18% 22%, rgba(10,132,255,0.22) 0%, transparent 100%), radial-gradient(ellipse 55% 65% at 82% 78%, rgba(191,90,242,0.16) 0%, transparent 100%), radial-gradient(ellipse 40% 40% at 50% 50%, rgba(48,209,88,0.07) 0%, transparent 100%), #000000"
-          :"radial-gradient(ellipse 65% 55% at 18% 22%, rgba(10,132,255,0.09) 0%, transparent 100%), radial-gradient(ellipse 55% 65% at 82% 78%, rgba(191,90,242,0.07) 0%, transparent 100%), #f2f2f7",
+          :"radial-gradient(ellipse 65% 55% at 18% 22%, rgba(10,132,255,0.22) 0%, transparent 100%), radial-gradient(ellipse 55% 65% at 82% 78%, rgba(191,90,242,0.16) 0%, transparent 100%), radial-gradient(ellipse 40% 40% at 50% 50%, rgba(48,209,88,0.09) 0%, transparent 100%), #f2f2f7",
         width:"100vw",
         height:"100%",
         maxWidth:430,
