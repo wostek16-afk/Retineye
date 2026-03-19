@@ -7,7 +7,6 @@ RUN npm ci --prefer-offline 2>/dev/null || npm install
 
 COPY index.html vite.config.js eslint.config.js ./
 COPY src ./src
-COPY public ./public 2>/dev/null || true
 
 RUN npm run build
 # Le résultat est dans /frontend/dist
