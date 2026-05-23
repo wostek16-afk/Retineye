@@ -815,104 +815,238 @@ function GlycemiaRiskScore({glycLogs,lang}){
   const [loading,setLoading]=useState(false);
   const [err,setErr]=useState("");
   const [open,setOpen]=useState(false);
+  const [form,setForm]=useState({hba1c:"7.5",duree:"10",tension:"130",sexe:"M",rd:false,type_diabete:"DT2"});
 
   const API="https://retineye-api.up.railway.app";
 
-  const LABELS={
-    fr:{title:"Score de risque ophtalmologique",btn:"Calculer mon score",computing:"Calcul en cours...",
+  const L={
+    fr:{title:"Score de risque (RetinaRisk)",btn:"Calculer mon score",computing:"Calcul...",
       low:"Faible",moderate:"Modéré",high:"Élevé",
       reco:"Recommandation",why:"Pourquoi ce score ?",
-      disclaimer:"Outil de sensibilisation uniquement — ne remplace pas un ophtalmologiste.",
-      nodata:"Ajoutez au moins 3 mesures de glycémie pour calculer le score.",
-      err:"Erreur serveur — vérifiez votre connexion.",recalc:"↩ Recalculer"},
-    en:{title:"Ophthalmic risk score",btn:"Calculate my score",computing:"Calculating...",
+      disclaimer:"Score basé sur Aspelund et al., Diabetologia 2011 — outil de sensibilisation uniquement.",
+      nodata:"Ajoutez au moins 3 mesures de glycémie.",
+      err:"Erreur serveur — vérifiez votre connexion.",recalc:"↩ Recalculer",
+      lbl_hba1c:"HbA1c (%)",lbl_duree:"Durée du diabète (ans)",lbl_tension:"Tension systolique (mmHg)",
+      lbl_sexe:"Sexe",lbl_rd:"RD déjà diagnostiquée",lbl_type:"Type de diabète",
+      male:"Homme",female:"Femme",yes:"Oui",no:"Non",dt1:"Type 1",dt2:"Type 2",
+      next_fo:"Prochain FO recommandé",months:"mois",
+      hba1c_f:"HbA1c",duree_f:"Durée diabète",tension_f:"Tension",
+      src:"Source : Aspelund et al. 2011 (Diabetologia 54:2525) + Hermann et al. 2014"},
+    en:{title:"Retinal Risk Score (RetinaRisk)",btn:"Calculate my score",computing:"Calculating...",
       low:"Low",moderate:"Moderate",high:"High",
       reco:"Recommendation",why:"Why this score?",
-      disclaimer:"Awareness tool only — does not replace an ophthalmologist.",
-      nodata:"Add at least 3 blood glucose readings to calculate the score.",
-      err:"Server error — check your connection.",recalc:"↩ Recalculate"},
-    de:{title:"Ophthalmisches Risiko-Score",btn:"Meinen Score berechnen",computing:"Berechnung...",
+      disclaimer:"Based on Aspelund et al., Diabetologia 2011 — awareness tool only.",
+      nodata:"Add at least 3 blood glucose readings.",
+      err:"Server error — check your connection.",recalc:"↩ Recalculate",
+      lbl_hba1c:"HbA1c (%)",lbl_duree:"Diabetes duration (years)",lbl_tension:"Systolic BP (mmHg)",
+      lbl_sexe:"Sex",lbl_rd:"Known DR",lbl_type:"Diabetes type",
+      male:"Male",female:"Female",yes:"Yes",no:"No",dt1:"Type 1",dt2:"Type 2",
+      next_fo:"Next recommended fundus exam",months:"months",
+      hba1c_f:"HbA1c",duree_f:"Diabetes duration",tension_f:"BP",
+      src:"Source: Aspelund et al. 2011 (Diabetologia 54:2525) + Hermann et al. 2014"},
+    de:{title:"Retinales Risiko (RetinaRisk)",btn:"Score berechnen",computing:"Berechnung...",
       low:"Gering",moderate:"Mäßig",high:"Hoch",
       reco:"Empfehlung",why:"Warum dieser Score?",
-      disclaimer:"Nur Sensibilisierungstool — ersetzt keinen Augenarzt.",
-      nodata:"Fügen Sie mindestens 3 Blutzuckermessungen hinzu.",
-      err:"Serverfehler — Verbindung prüfen.",recalc:"↩ Neu berechnen"},
-    ro:{title:"Scor de risc oftalmologic",btn:"Calculează scorul meu",computing:"Se calculează...",
+      disclaimer:"Basierend auf Aspelund et al. 2011 — nur Sensibilisierungstool.",
+      nodata:"Mindestens 3 Blutzuckermessungen hinzufügen.",
+      err:"Serverfehler.",recalc:"↩ Neu berechnen",
+      lbl_hba1c:"HbA1c (%)",lbl_duree:"Diabetesdauer (Jahre)",lbl_tension:"Syst. Blutdruck (mmHg)",
+      lbl_sexe:"Geschlecht",lbl_rd:"Bekannte DR",lbl_type:"Diabetes-Typ",
+      male:"Männlich",female:"Weiblich",yes:"Ja",no:"Nein",dt1:"Typ 1",dt2:"Typ 2",
+      next_fo:"Nächste Augenuntersuchung",months:"Monate",
+      hba1c_f:"HbA1c",duree_f:"Diabetesdauer",tension_f:"Blutdruck",
+      src:"Quelle: Aspelund et al. 2011 + Hermann et al. 2014"},
+    ro:{title:"Scor de risc retinian (RetinaRisk)",btn:"Calculează scorul",computing:"Calculare...",
       low:"Scăzut",moderate:"Moderat",high:"Ridicat",
       reco:"Recomandare",why:"De ce acest scor?",
-      disclaimer:"Instrument de sensibilizare — nu înlocuiește un oftalmolog.",
-      nodata:"Adăugați cel puțin 3 măsurători de glicemie.",
-      err:"Eroare server — verificați conexiunea.",recalc:"↩ Recalculează"},
+      disclaimer:"Bazat pe Aspelund et al. 2011 — instrument de sensibilizare.",
+      nodata:"Adăugați cel puțin 3 măsurători.",
+      err:"Eroare server.",recalc:"↩ Recalculează",
+      lbl_hba1c:"HbA1c (%)",lbl_duree:"Durata diabetului (ani)",lbl_tension:"TA sistolică (mmHg)",
+      lbl_sexe:"Sex",lbl_rd:"DR diagnosticată",lbl_type:"Tip diabet",
+      male:"Masculin",female:"Feminin",yes:"Da",no:"Nu",dt1:"Tip 1",dt2:"Tip 2",
+      next_fo:"Următor fond de ochi recomandat",months:"luni",
+      hba1c_f:"HbA1c",duree_f:"Durată diabet",tension_f:"TA",
+      src:"Sursă: Aspelund et al. 2011 + Hermann et al. 2014"},
   };
-  const L=LABELS[lang]||LABELS.fr;
+  const i=L[lang]||L.fr;
 
-  const getRiskColor=lvl=>lvl==="faible"||lvl==="low"||lvl==="Gering"||lvl==="Scăzut"?"#30d158":lvl==="modéré"||lvl==="moderate"||lvl==="Mäßig"||lvl==="Moderat"?"#ff9f0a":"#ff453a";
+  const getRiskColor=lvl=>{
+    if(lvl==="faible"||lvl==="low"||lvl==="Gering"||lvl==="Scăzut") return"#30d158";
+    if(lvl==="modéré"||lvl==="moderate"||lvl==="Mäßig"||lvl==="Moderat") return"#ff9f0a";
+    return"#ff453a";
+  };
 
   const compute=async()=>{
-    if(glycLogs.length<3){setErr(L.nodata);return;}
+    if(glycLogs.length<3){setErr(i.nodata);return;}
     setLoading(true);setErr("");
     try{
-      const entries=glycLogs.map(g=>({value:g.value,timestamp:new Date(g.date+"T12:00:00").getTime(),unit:"g/L"}));
-      const r=await fetch(API+"/glycemia-risk",{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({glucose_entries:entries,hba1c_entries:[],diabetes_type:"DT2"})
+      const payload={
+        hba1c:parseFloat(form.hba1c)||7.5,
+        duree_diabete:parseFloat(form.duree)||10,
+        tension_sys:parseFloat(form.tension)||130,
+        sexe:form.sexe,
+        rd_presente:form.rd,
+        type_diabete:form.type_diabete,
+        hba1c_history:[],
+      };
+      const r=await fetch(API+"/retinarisk",{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify(payload),
       });
       if(!r.ok) throw new Error("HTTP "+r.status);
       const d=await r.json();
       setResult(d);
-    }catch(e){setErr(L.err);}
+    }catch(e){setErr(i.err);}
     finally{setLoading(false);}
   };
 
   const scoreColor=result?getRiskColor(result.risk_level):"#636366";
 
+  const ScoreArc=({score})=>{
+    const R=54,cx=64,cy=64;
+    const startA=Math.PI*0.75,endA=Math.PI*2.25,total=endA-startA;
+    const toXY=a=>({x:cx+R*Math.cos(a),y:cy+R*Math.sin(a)});
+    const bgS=toXY(startA),bgE=toXY(endA);
+    const fgA=startA+(score/100)*total;
+    const fgE=toXY(fgA);
+    const large=fgA-startA>Math.PI?1:0;
+    const col=score<35?"#30d158":score<65?"#ff9f0a":"#ff453a";
+    const bgP=`M ${bgS.x} ${bgS.y} A ${R} ${R} 0 1 1 ${bgE.x} ${bgE.y}`;
+    const fgP=`M ${toXY(startA).x} ${toXY(startA).y} A ${R} ${R} 0 ${large} 1 ${fgE.x} ${fgE.y}`;
+    return(
+      <svg width="128" height="100" viewBox="0 0 128 100" style={{display:"block"}}>
+        <path d={bgP} fill="none" stroke="#2c2c2e" strokeWidth="11" strokeLinecap="round"/>
+        {score>0&&<path d={fgP} fill="none" stroke={col} strokeWidth="11" strokeLinecap="round"/>}
+        <text x={cx} y={cy-2} textAnchor="middle" fontSize="22" fontWeight="700" fill={col}>{score}</text>
+        <text x={cx} y={cy+14} textAnchor="middle" fontSize="9" fill="#636366">/100</text>
+      </svg>
+    );
+  };
+
+  const FField=({label,value,onChange,min,max,step})=>(
+    <div style={{marginBottom:14}}>
+      <div style={{color:t.text3,fontSize:11,fontWeight:600,marginBottom:5,letterSpacing:.4}}>{label}</div>
+      <input type="number" value={value} min={min} max={max} step={step||"0.1"}
+        inputMode="decimal"
+        onChange={e=>onChange(e.target.value)}
+        style={{width:"100%",padding:"9px 12px",borderRadius:10,border:"1px solid "+t.sep,
+          background:t.bg3,color:t.text,fontSize:15,fontFamily:t.sf,boxSizing:"border-box"}}/>
+    </div>
+  );
+
+  const Toggle=({val,opts,onChange})=>(
+    <div style={{display:"flex",gap:6,marginBottom:14}}>
+      {opts.map(([v,l])=>(
+        <button key={v} onClick={()=>onChange(v)}
+          style={{flex:1,padding:"8px 4px",borderRadius:10,
+            border:"1px solid "+(val===v?"#0a84ff":t.sep),
+            background:val===v?"#0a84ff22":"transparent",
+            color:val===v?"#0a84ff":t.text3,
+            fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:t.sf}}>
+          {l}
+        </button>
+      ))}
+    </div>
+  );
+
   return(
     <div style={{marginTop:20,borderRadius:16,overflow:"hidden",border:"1px solid "+t.sep}}>
-      <button onClick={()=>setOpen(o=>!o)} style={{width:"100%",padding:"14px 16px",background:t.bg2,border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between",fontFamily:t.sf}}>
+      <button onClick={()=>setOpen(o=>!o)}
+        style={{width:"100%",padding:"14px 16px",background:t.bg2,border:"none",cursor:"pointer",
+          display:"flex",alignItems:"center",justifyContent:"space-between",fontFamily:t.sf}}>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
           <span style={{fontSize:20}}>🔬</span>
-          <span style={{color:t.text,fontSize:15,fontWeight:600}}>{L.title}</span>
+          <span style={{color:t.text,fontSize:15,fontWeight:600}}>{i.title}</span>
         </div>
-        <span style={{color:t.text3,fontSize:18,transform:open?"rotate(180deg)":"none",transition:"0.2s"}}>{open?"▲":"▼"}</span>
+        <span style={{color:t.text3,fontSize:14,transform:open?"rotate(180deg)":"none",transition:"0.2s"}}>▼</span>
       </button>
+
       {open&&(
         <div style={{padding:"16px",background:t.bg2,borderTop:"1px solid "+t.sep}}>
+
           {!result&&(
             <>
-              {err&&<div style={{padding:"10px 14px",borderRadius:10,background:"#ff453a22",color:"#ff453a",fontSize:13,marginBottom:12}}>{err}</div>}
-              <button onClick={compute} disabled={loading} style={{width:"100%",padding:"12px",background:loading?"#636366":"#0a84ff",border:"none",borderRadius:12,color:"#fff",fontSize:15,fontWeight:600,fontFamily:t.sf,cursor:loading?"not-allowed":"pointer"}}>
-                {loading?"⏳ "+L.computing:"🧮 "+L.btn}
+              {err&&<div style={{padding:"10px",borderRadius:10,background:"#ff453a22",color:"#ff453a",fontSize:13,marginBottom:12}}>{err}</div>}
+
+              <FField label={i.lbl_hba1c} value={form.hba1c} min={4} max={15} step="0.1"
+                onChange={v=>setForm(f=>({...f,hba1c:v}))}/>
+              <FField label={i.lbl_duree} value={form.duree} min={0} max={60} step="1"
+                onChange={v=>setForm(f=>({...f,duree:v}))}/>
+              <FField label={i.lbl_tension} value={form.tension} min={90} max={200} step="1"
+                onChange={v=>setForm(f=>({...f,tension:v}))}/>
+
+              <div style={{color:t.text3,fontSize:11,fontWeight:600,marginBottom:5,letterSpacing:.4}}>{i.lbl_type}</div>
+              <Toggle val={form.type_diabete} opts={[["DT1",i.dt1],["DT2",i.dt2]]}
+                onChange={v=>setForm(f=>({...f,type_diabete:v}))}/>
+
+              <div style={{color:t.text3,fontSize:11,fontWeight:600,marginBottom:5,letterSpacing:.4}}>{i.lbl_sexe}</div>
+              <Toggle val={form.sexe} opts={[["M",i.male],["F",i.female]]}
+                onChange={v=>setForm(f=>({...f,sexe:v}))}/>
+
+              <div style={{color:t.text3,fontSize:11,fontWeight:600,marginBottom:5,letterSpacing:.4}}>{i.lbl_rd}</div>
+              <Toggle val={String(form.rd)} opts={[["false",i.no],["true",i.yes]]}
+                onChange={v=>setForm(f=>({...f,rd:v==="true"}))}/>
+
+              <button onClick={compute} disabled={loading}
+                style={{width:"100%",padding:"13px",background:loading?"#636366":"#0a84ff",
+                  border:"none",borderRadius:12,color:"#fff",fontSize:15,fontWeight:600,
+                  fontFamily:t.sf,cursor:loading?"not-allowed":"pointer",marginTop:4}}>
+                {loading?"⏳ "+i.computing:"🧮 "+i.btn}
               </button>
             </>
           )}
+
           {result&&(
             <div>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
                 <div>
-                  <div style={{color:t.text3,fontSize:12,marginBottom:6}}>{L.title}</div>
-                  <div style={{display:"inline-flex",alignItems:"center",gap:6,background:scoreColor,color:"#fff",borderRadius:99,padding:"5px 14px",fontWeight:700,fontSize:14}}>
-                    {result.risk_level==="faible"||result.risk_level==="low"?L.low:result.risk_level==="modéré"||result.risk_level==="moderate"?L.moderate:L.high}
+                  <div style={{color:t.text3,fontSize:11,marginBottom:8}}>{i.title}</div>
+                  <div style={{display:"inline-flex",alignItems:"center",background:scoreColor,
+                    color:"#fff",borderRadius:99,padding:"5px 14px",fontWeight:700,fontSize:14}}>
+                    {result.risk_level==="faible"||result.risk_level==="low"?i.low
+                      :result.risk_level==="modéré"||result.risk_level==="moderate"?i.moderate:i.high}
+                  </div>
+                  <div style={{marginTop:8,color:t.text3,fontSize:12}}>
+                    {i.next_fo} : <span style={{color:scoreColor,fontWeight:700}}>{result.next_screening_months} {i.months}</span>
                   </div>
                 </div>
-                <div style={{textAlign:"center",background:t.bg3,borderRadius:14,padding:"10px 16px",minWidth:70}}>
-                  <div style={{color:scoreColor,fontSize:28,fontWeight:700,lineHeight:1}}>{result.score}</div>
-                  <div style={{color:t.text3,fontSize:10}}>/100</div>
-                </div>
+                <ScoreArc score={result.score_pct}/>
               </div>
-              <div style={{height:6,borderRadius:3,background:t.sep,marginBottom:14,overflow:"hidden"}}>
-                <div style={{height:"100%",width:result.score+"%",background:scoreColor,borderRadius:3,transition:"width 0.8s ease"}}/>
+
+              <div style={{background:t.bg3,borderRadius:10,padding:"10px 12px",marginBottom:10}}>
+                {[
+                  [i.hba1c_f, result.factors?.hba1c+" %"],
+                  [i.duree_f, result.factors?.duree_diabete+" ans"],
+                  [i.tension_f, result.factors?.tension_sys+" mmHg"],
+                ].map(([lbl,val])=>(
+                  <div key={lbl} style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:4}}>
+                    <span style={{color:t.text3}}>{lbl}</span>
+                    <span style={{color:t.text,fontWeight:600}}>{val}</span>
+                  </div>
+                ))}
               </div>
+
               <div style={{background:t.bg3,borderRadius:12,padding:"12px 14px",marginBottom:10}}>
-                <div style={{color:t.text3,fontSize:11,fontWeight:600,marginBottom:6,textTransform:"uppercase",letterSpacing:.5}}>📋 {L.reco}</div>
-                <div style={{color:t.text,fontSize:13,lineHeight:1.5}}>{result.recommendation}</div>
+                <div style={{color:t.text3,fontSize:10,fontWeight:700,marginBottom:5,textTransform:"uppercase",letterSpacing:.5}}>📋 {i.reco}</div>
+                <div style={{color:t.text,fontSize:13,lineHeight:1.55}}>{result.recommendation}</div>
               </div>
+
               <div style={{background:t.bg3,borderRadius:12,padding:"12px 14px",marginBottom:12}}>
-                <div style={{color:t.text3,fontSize:11,fontWeight:600,marginBottom:6,textTransform:"uppercase",letterSpacing:.5}}>💡 {L.why}</div>
-                <div style={{color:t.text,fontSize:13,lineHeight:1.5}}>{result.explanation}</div>
+                <div style={{color:t.text3,fontSize:10,fontWeight:700,marginBottom:5,textTransform:"uppercase",letterSpacing:.5}}>💡 {i.why}</div>
+                <div style={{color:t.text,fontSize:13,lineHeight:1.55}}>{result.explanation}</div>
               </div>
-              <button onClick={()=>setResult(null)} style={{width:"100%",padding:"9px",background:"transparent",border:"1px solid "+t.sep,borderRadius:10,color:t.text3,fontSize:13,cursor:"pointer",fontFamily:t.sf}}>{L.recalc}</button>
-              <div style={{marginTop:10,fontSize:11,color:t.text3,textAlign:"center",lineHeight:1.4}}>⚕️ {L.disclaimer}</div>
+
+              <button onClick={()=>setResult(null)}
+                style={{width:"100%",padding:"9px",background:"transparent",border:"1px solid "+t.sep,
+                  borderRadius:10,color:t.text3,fontSize:13,cursor:"pointer",fontFamily:t.sf}}>
+                {i.recalc}
+              </button>
+
+              <div style={{marginTop:10,fontSize:10,color:t.text3,textAlign:"center",lineHeight:1.5}}>
+                ⚕️ {i.disclaimer}<br/>
+                <span style={{opacity:.6}}>{i.src}</span>
+              </div>
             </div>
           )}
         </div>
