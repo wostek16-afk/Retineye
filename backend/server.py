@@ -313,3 +313,114 @@ def analyze(req: AnalyzeRequest):
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ─── RetinaRisk — Score Aspelund 2011 (Diabetologia 54:2525) ─────────────────
+import math as _math
+from typing import List, Optional as _Opt
+from pydantic import BaseModel as _BM
+
+class RetinaRiskRequest(_BM):
+    hba1c: float                          # % HbA1c actuelle
+    duree_diabete: float                  # années
+    tension_sys: float = 130.0            # mmHg systolique
+    sexe: str = "M"                       # "M" ou "F"
+    rd_presente: bool = False             # RD déjà connue
+    type_diabete: str = "DT2"            # "DT1" ou "DT2"
+    hba1c_history: List[float] = []       # valeurs HbA1c précédentes (variabilité)
+
+class RetinaRiskResponse(_BM):
+    score_pct: int                        # 0–100
+    risk_level: str                       # "faible" | "modéré" | "élevé"
+    risque_1an_pct: float                 # risque brut à 1 an en %
+    next_screening_months: int            # délai recommandé de prochain FO
+    recommendation: str
+    explanation: str
+    factors: dict
+
+@app.post("/retinarisk", response_model=RetinaRiskResponse)
+def retinarisk(req: RetinaRiskRequest):
+    """
+    Score de risque de rétinopathie diabétique menaçant la vision.
+    Implémentation des équations Aspelund 2011 (Diabetologia 54:2525),
+    enrichies par variabilité HbA1c (Hermann 2014, PLoS One).
+    """
+    t = max(0.5, float(req.duree_diabete))
+    hba1c = float(req.hba1c)
+    pas = float(req.tension_sys)
+    sexe_coeff = 0.194 if req.sexe == "M" else -0.194
+
+    if req.type_diabete == "DT1":
+        # Modèle Weibull T1D
+        def S0(x): return _math.exp(-_math.exp(-7.849) * x**2.075)
+        rd_mean = 0.52
+        lc = ((hba1c - 8) * 0.1851
+              + (pas - 130) * 0.007813
+              + (float(req.rd_presente) - rd_mean) * (1.10 + sexe_coeff))
+    else:
+        # Modèle Weibull T2D (avec offset 5.2% déjà atteints au diagnostic)
+        def S0(x):
+            base = _math.exp(-_math.exp(-4.88) * x**1.170)
+            return max(0.001, base - 0.052)
+        rd_mean = 0.33
+        lc = ((hba1c - 8) * 0.380544
+              + (pas - 130) * 0.04308
+              + (float(req.rd_presente) - rd_mean) * (0.89 + sexe_coeff))
+
+    s_t   = S0(t)     ** _math.exp(lc)
+    s_t1  = S0(t + 1) ** _math.exp(lc)
+    risque_1an = max(0.0, min(100.0, (1 - s_t1 / max(s_t, 1e-9)) * 100))
+
+    # Bonus variabilité HbA1c inter-visites (Hermann 2014)
+    facteur_variab = 1.0
+    if len(req.hba1c_history) >= 2:
+        all_hba1c = req.hba1c_history + [hba1c]
+        mean_h = sum(all_hba1c) / len(all_hba1c)
+        sd_h = (_math.sqrt(sum((x - mean_h)**2 for x in all_hba1c) / len(all_hba1c)))
+        if sd_h > 0.5:
+            facteur_variab = _math.exp(0.15 * (sd_h - 0.5))
+
+    risque_ajuste = min(100.0, risque_1an * facteur_variab)
+
+    # Score 0–100 normalisé (seuil clinique : >5% = modéré, >15% = élevé)
+    if risque_ajuste < 2.5:
+        score_pct = int(risque_ajuste / 2.5 * 30)
+        risk_level = "faible"
+        next_months = 24
+        reco = "Votre risque de rétinopathie menaçant la vision est faible sur 12 mois. Un contrôle ophtalmologique tous les 24 mois est recommandé, sauf facteur aggravant."
+        expl = "Votre profil (HbA1c, durée du diabète, tension artérielle) est associé à un risque faible de progression vers une rétinopathie sévère dans les 12 prochains mois."
+    elif risque_ajuste < 10.0:
+        score_pct = 30 + int((risque_ajuste - 2.5) / 7.5 * 35)
+        risk_level = "modéré"
+        next_months = 12
+        reco = "Un fond d'œil annuel est recommandé. Optimisez le contrôle glycémique (cible HbA1c < 7 %) et tensionnel (< 130/80 mmHg)."
+        expl = "Votre profil présente un risque modéré. Plusieurs facteurs peuvent être optimisés pour réduire ce risque."
+    else:
+        score_pct = 65 + int(min((risque_ajuste - 10.0) / 20.0 * 35, 35))
+        risk_level = "élevé"
+        next_months = 6
+        reco = "Consultez un ophtalmologiste dans les 6 prochains mois pour un fond d'œil. Un contrôle glycémique et tensionnel strict est urgent."
+        expl = "Votre profil indique un risque élevé de progression vers une rétinopathie menaçant la vision. Une prise en charge rapprochée est nécessaire."
+
+    score_pct = max(0, min(100, score_pct))
+
+    factors = {
+        "hba1c": round(hba1c, 1),
+        "duree_diabete": round(t, 1),
+        "tension_sys": round(pas),
+        "type_diabete": req.type_diabete,
+        "rd_presente": req.rd_presente,
+        "variabilite_hba1c": round(facteur_variab, 3),
+        "risque_brut_1an_pct": round(risque_1an, 2),
+        "risque_ajuste_1an_pct": round(risque_ajuste, 2),
+    }
+
+    return RetinaRiskResponse(
+        score_pct=score_pct,
+        risk_level=risk_level,
+        risque_1an_pct=round(risque_ajuste, 2),
+        next_screening_months=next_months,
+        recommendation=reco,
+        explanation=expl,
+        factors=factors,
+    )
