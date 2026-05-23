@@ -189,6 +189,74 @@ def analyze(req: AnalyzeRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+
+
+# ─── RetinaRisk — Score Aspelund 2011 (Diabetologia 54:2525) ─────────────────
+import math as _math
+from pydantic import BaseModel as _BM
+from typing import List as _List
+
+class RetinaRiskRequest(_BM):
+    hba1c: float
+    duree_diabete: float
+    tension_sys: float = 130.0
+    sexe: str = "M"
+    rd_presente: bool = False
+    type_diabete: str = "DT2"
+    hba1c_history: _List[float] = []
+
+class RetinaRiskResponse(_BM):
+    score_pct: int
+    risk_level: str
+    risque_1an_pct: float
+    next_screening_months: int
+    recommendation: str
+    explanation: str
+    factors: dict
+
+@app.post("/retinarisk", response_model=RetinaRiskResponse)
+def retinarisk(req: RetinaRiskRequest):
+    t = max(0.5, float(req.duree_diabete))
+    hba1c = float(req.hba1c)
+    pas = float(req.tension_sys)
+    sc = 0.194 if req.sexe == "M" else -0.194
+    if req.type_diabete == "DT1":
+        def S0(x): return _math.exp(-_math.exp(-7.849) * x**2.075)
+        lc = (hba1c-8)*0.1851 + (pas-130)*0.007813 + (float(req.rd_presente)-0.52)*(1.10+sc)
+    else:
+        def S0(x): return max(0.001, _math.exp(-_math.exp(-4.88)*x**1.170)-0.052)
+        lc = (hba1c-8)*0.380544 + (pas-130)*0.04308 + (float(req.rd_presente)-0.33)*(0.89+sc)
+    s_t = S0(t)**_math.exp(lc)
+    s_t1 = S0(t+1)**_math.exp(lc)
+    r = max(0.0, min(100.0, (1-s_t1/max(s_t,1e-9))*100))
+    fv = 1.0
+    if len(req.hba1c_history)>=2:
+        ah = req.hba1c_history+[hba1c]
+        mh = sum(ah)/len(ah)
+        sd = _math.sqrt(sum((x-mh)**2 for x in ah)/len(ah))
+        if sd>0.5: fv = _math.exp(0.15*(sd-0.5))
+    r = min(100.0, r*fv)
+    if r<2.5:
+        sp=int(r/2.5*30); rl="faible"; nm=24
+        rc="Votre risque est faible. Un controle ophtalmologique tous les 24 mois est recommande."
+        ex="Votre profil est associe a un risque faible de progression sur 12 mois."
+    elif r<10.0:
+        sp=30+int((r-2.5)/7.5*35); rl="modere"; nm=12
+        rc="Un fond d'oeil annuel est recommande. Optimisez HbA1c < 7% et tension < 130/80 mmHg."
+        ex="Votre profil presente un risque modere. Plusieurs facteurs peuvent etre optimises."
+    else:
+        sp=65+int(min((r-10.0)/20.0*35,35)); rl="eleve"; nm=6
+        rc="Consultez un ophtalmologiste dans les 6 prochains mois. Controle glycemique urgent."
+        ex="Votre profil indique un risque eleve. Une prise en charge rapprochee est necessaire."
+    return RetinaRiskResponse(
+        score_pct=max(0,min(100,sp)), risk_level=rl,
+        risque_1an_pct=round(r,2), next_screening_months=nm,
+        recommendation=rc, explanation=ex,
+        factors={"hba1c":round(hba1c,1),"duree_diabete":round(t,1),
+                 "tension_sys":round(pas),"type_diabete":req.type_diabete,
+                 "rd_presente":req.rd_presente,"risque_ajuste_1an_pct":round(r,2)}
+    )
+
 # Servir le frontend React buildé — doit être en dernier
 if os.path.isdir(STATIC_DIR):
     app.mount("/assets", StaticFiles(directory=f"{STATIC_DIR}/assets"), name="assets")
