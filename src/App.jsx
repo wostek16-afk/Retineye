@@ -528,7 +528,68 @@ function GlycRow({g,color,t,showDate=false}){
   );
 }
 
-function GlycemiaScreen({glycLogs,onSave,onBack,lang="fr"}){
+function HbA1cSection({hba1cLogs,onSave,t}){
+  const [open,setOpen]=useState(false);
+  const [val,setVal]=useState("");
+  const [date,setDate]=useState(new Date().toISOString().slice(0,10));
+  const [err,setErr]=useState("");
+  const getColor=v=>v<6.5?"#30d158":v<7?"#30d158":v<8?"#ff9f0a":"#ff453a";
+  const handleAdd=()=>{
+    const v=parseFloat(val.replace(",","."));
+    if(isNaN(v)||v<4||v>15){setErr("Valeur entre 4 et 15 %");return;}
+    onSave&&onSave({id:Date.now().toString(),value:v,date,ts:Date.now()});
+    setVal("");setErr("");setOpen(false);
+  };
+  const sorted=[...hba1cLogs].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,10);
+  return(
+    <div style={{marginTop:20}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+        <div style={{color:t.text,fontSize:17,fontWeight:700,fontFamily:t.sf}}>HbA1c</div>
+        <button onClick={()=>setOpen(o=>!o)}
+          style={{background:open?t.bg3:"#30d15820",border:"none",borderRadius:20,padding:"6px 14px",
+            color:open?t.text3:"#30d158",fontSize:13,fontWeight:600,fontFamily:t.sm,cursor:"pointer"}}>
+          {open?"Annuler":"+ Ajouter"}
+        </button>
+      </div>
+      {open&&(
+        <Card style={{marginBottom:12}}>
+          <FIn label="HbA1c (%)" value={val} onChange={setVal} placeholder="ex: 7.2" inputMode="decimal"/>
+          <FIn label="Date" value={date} onChange={setDate} type="date"/>
+          {err&&<div style={{color:"#ff453a",fontSize:12,marginBottom:8}}>{err}</div>}
+          <PrimaryBtn label="Enregistrer" onClick={handleAdd}/>
+          <InfoBox color="#30d158" text="Cible HbA1c < 7 % (HAS 2024) — Valeur indicative." icon="🩸"/>
+        </Card>
+      )}
+      {sorted.length===0?(
+        <div style={{color:t.text3,fontSize:13,fontFamily:t.sm,padding:"12px 0"}}>Aucune valeur HbA1c enregistrée.</div>
+      ):(
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+          {sorted.map(h=>(
+            <div key={h.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",
+              background:t.bg2,borderRadius:12,padding:"10px 14px",border:`1px solid ${t.sep}`}}>
+              <div style={{display:"flex",alignItems:"center",gap:10}}>
+                <div style={{width:10,height:10,borderRadius:"50%",background:getColor(h.value)}}/>
+                <div>
+                  <div style={{color:t.text,fontSize:15,fontWeight:700,fontFamily:t.sf}}>{h.value.toFixed(1)} %</div>
+                  <div style={{color:t.text3,fontSize:11,fontFamily:t.sm}}>
+                    {new Date(h.date+"T12:00").toLocaleDateString("fr-FR",{day:"numeric",month:"short",year:"numeric"})}
+                  </div>
+                </div>
+              </div>
+              <div style={{background:getColor(h.value)+"22",borderRadius:8,padding:"3px 8px"}}>
+                <span style={{color:getColor(h.value),fontSize:11,fontWeight:700}}>
+                  {h.value<7?"✓ Cible":"⚠ Élevée"}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function GlycemiaScreen({glycLogs,onSave,hba1cLogs=[],onSaveHba1c,onBack,lang="fr"}){
   const t=useTheme();
   const [view,setView]=useState("chart");
   const [form,setForm]=useState({moment:"Matin",value:"",note:"",date:new Date().toISOString().slice(0,10)});
@@ -735,7 +796,7 @@ function ScanScreen({user,onDone}){
 
 
 // ââ HISTORY âââââââââââââââââââââââââââââââââââââââââââââââââââ
-function HistoryScreen({scans,glycLogs,onScanDetail}){
+function HistoryScreen({scans,glycLogs,hba1cLogs=[],onScanDetail}){
   const t=useTheme(); const lang=useLang(); const i=I18N[lang]||I18N.fr; const ICDR=getICDR(lang);
   const [filter,setFilter]=useState("all");
   const visionLogs=DB.get("vision_history",[]);
@@ -802,72 +863,123 @@ function HistoryScreen({scans,glycLogs,onScanDetail}){
           );
         })
       }
-      <GlycemiaRiskScore glycLogs={glycLogs} lang={lang}/>
+      <GlycemiaRiskScore glycLogs={glycLogs} hba1cLogs={hba1cLogs} lang={lang}/>
     </div>
   );
 }
 
 // ââ VISION ââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
-function GlycemiaRiskScore({glycLogs,lang}){
+function GlycemiaRiskScore({glycLogs,hba1cLogs=[],lang}){
   const t=useTheme();
   const [result,setResult]=useState(null);
   const [loading,setLoading]=useState(false);
   const [err,setErr]=useState("");
   const [open,setOpen]=useState(false);
-  const [form,setForm]=useState({hba1c:"7.5",duree:"10",tension:"130",sexe:"M",rd:false,type_diabete:"DT2"});
+  const [tooltip,setTooltip]=useState(null);
+
+  // Préremplir HbA1c depuis les logs (dernière valeur)
+  const lastHba1c = hba1cLogs.length>0
+    ? [...hba1cLogs].sort((a,b)=>b.ts-a.ts)[0].value.toString()
+    : "7.5";
+  const hba1cHistory = hba1cLogs.map(h=>h.value);
+
+  const [form,setForm]=useState({
+    hba1c: lastHba1c,
+    duree:"10",tension:"130",sexe:"M",rd:false,type_diabete:"DT2"
+  });
+
+  // Sync HbA1c si nouveaux logs arrivent
+  useEffect(()=>{
+    if(hba1cLogs.length>0){
+      const last=[...hba1cLogs].sort((a,b)=>b.ts-a.ts)[0].value;
+      setForm(f=>({...f,hba1c:last.toString()}));
+    }
+  },[hba1cLogs.length]);
 
   const API="https://retineye-api.up.railway.app";
 
   const L={
-    fr:{title:"Score de risque (RetinaRisk)",btn:"Calculer mon score",computing:"Calcul...",
+    fr:{
+      title:"Score de risque rétinien",subtitle:"RetinaRisk — Aspelund 2011",
+      btn:"Calculer mon risque",computing:"Calcul...",
       low:"Faible",moderate:"Modéré",high:"Élevé",
-      reco:"Recommandation",why:"Pourquoi ce score ?",
-      disclaimer:"Score basé sur Aspelund et al., Diabetologia 2011 — outil de sensibilisation uniquement.",
-      nodata:"Ajoutez au moins 3 mesures de glycémie.",
-      err:"Erreur serveur — vérifiez votre connexion.",recalc:"↩ Recalculer",
-      lbl_hba1c:"HbA1c (%)",lbl_duree:"Durée du diabète (ans)",lbl_tension:"Tension systolique (mmHg)",
-      lbl_sexe:"Sexe",lbl_rd:"RD déjà diagnostiquée",lbl_type:"Type de diabète",
+      reco:"Recommandation",why:"Explication",
+      disclaimer:"Score basé sur Aspelund et al., Diabetologia 2011. Outil de sensibilisation uniquement.",
+      nodata:"Ajoutez au moins 3 mesures de glycémie pour activer le score.",
+      noHba1c:"⚠️ Aucune HbA1c enregistrée — ajoutez-en une dans la section ci-dessus pour un score précis.",
+      err:"Erreur serveur — vérifiez votre connexion.",recalc:"Recalculer",
+      lbl_hba1c:"HbA1c actuelle (%)",lbl_duree:"Durée du diabète (ans)",
+      lbl_tension:"Tension systolique (mmHg)",
+      lbl_type:"Type de diabète",lbl_sexe:"Sexe",lbl_rd:"RD déjà diagnostiquée",
       male:"Homme",female:"Femme",yes:"Oui",no:"Non",dt1:"Type 1",dt2:"Type 2",
       next_fo:"Prochain FO recommandé",months:"mois",
-      hba1c_f:"HbA1c",duree_f:"Durée diabète",tension_f:"Tension",
-      src:"Source : Aspelund et al. 2011 (Diabetologia 54:2525) + Hermann et al. 2014"},
-    en:{title:"Retinal Risk Score (RetinaRisk)",btn:"Calculate my score",computing:"Calculating...",
+      tip_hba1c:"L'HbA1c reflète votre glycémie moyenne sur 3 mois. C'est le facteur prédictif le plus important de la rétinopathie.",
+      tip_duree:"Plus la durée du diabète est longue, plus le risque de rétinopathie augmente — même avec un bon contrôle glycémique.",
+      tip_tension:"L'hypertension artérielle aggrave la rétinopathie indépendamment du contrôle glycémique. Cible : < 130/80 mmHg.",
+      tip_rd:"La présence d'une rétinopathie existante augmente significativement le risque de progression vers des stades sévères.",
+      src:"Source : Aspelund et al. 2011 · Hermann et al. 2014",
+    },
+    en:{
+      title:"Retinal Risk Score",subtitle:"RetinaRisk — Aspelund 2011",
+      btn:"Calculate my risk",computing:"Calculating...",
       low:"Low",moderate:"Moderate",high:"High",
-      reco:"Recommendation",why:"Why this score?",
-      disclaimer:"Based on Aspelund et al., Diabetologia 2011 — awareness tool only.",
-      nodata:"Add at least 3 blood glucose readings.",
-      err:"Server error — check your connection.",recalc:"↩ Recalculate",
-      lbl_hba1c:"HbA1c (%)",lbl_duree:"Diabetes duration (years)",lbl_tension:"Systolic BP (mmHg)",
-      lbl_sexe:"Sex",lbl_rd:"Known DR",lbl_type:"Diabetes type",
+      reco:"Recommendation",why:"Explanation",
+      disclaimer:"Based on Aspelund et al., Diabetologia 2011. Awareness tool only.",
+      nodata:"Add at least 3 glucose readings to activate the score.",
+      noHba1c:"⚠️ No HbA1c recorded — add one above for an accurate score.",
+      err:"Server error — check your connection.",recalc:"Recalculate",
+      lbl_hba1c:"Current HbA1c (%)",lbl_duree:"Diabetes duration (years)",
+      lbl_tension:"Systolic BP (mmHg)",
+      lbl_type:"Diabetes type",lbl_sexe:"Sex",lbl_rd:"Known DR",
       male:"Male",female:"Female",yes:"Yes",no:"No",dt1:"Type 1",dt2:"Type 2",
-      next_fo:"Next recommended fundus exam",months:"months",
-      hba1c_f:"HbA1c",duree_f:"Diabetes duration",tension_f:"BP",
-      src:"Source: Aspelund et al. 2011 (Diabetologia 54:2525) + Hermann et al. 2014"},
-    de:{title:"Retinales Risiko (RetinaRisk)",btn:"Score berechnen",computing:"Berechnung...",
+      next_fo:"Next recommended FE",months:"months",
+      tip_hba1c:"HbA1c reflects your 3-month average blood sugar. It is the strongest predictor of diabetic retinopathy.",
+      tip_duree:"Longer diabetes duration increases retinopathy risk, even with good glycaemic control.",
+      tip_tension:"Hypertension worsens retinopathy independently of glycaemia. Target: < 130/80 mmHg.",
+      tip_rd:"Existing retinopathy significantly increases the risk of progression to severe stages.",
+      src:"Source: Aspelund et al. 2011 · Hermann et al. 2014",
+    },
+    de:{
+      title:"Retinales Risiko-Score",subtitle:"RetinaRisk — Aspelund 2011",
+      btn:"Risiko berechnen",computing:"Berechnung...",
       low:"Gering",moderate:"Mäßig",high:"Hoch",
-      reco:"Empfehlung",why:"Warum dieser Score?",
-      disclaimer:"Basierend auf Aspelund et al. 2011 — nur Sensibilisierungstool.",
-      nodata:"Mindestens 3 Blutzuckermessungen hinzufügen.",
-      err:"Serverfehler.",recalc:"↩ Neu berechnen",
-      lbl_hba1c:"HbA1c (%)",lbl_duree:"Diabetesdauer (Jahre)",lbl_tension:"Syst. Blutdruck (mmHg)",
-      lbl_sexe:"Geschlecht",lbl_rd:"Bekannte DR",lbl_type:"Diabetes-Typ",
+      reco:"Empfehlung",why:"Erklärung",
+      disclaimer:"Basierend auf Aspelund et al. 2011. Nur Sensibilisierungstool.",
+      nodata:"Mindestens 3 Messungen hinzufügen.",
+      noHba1c:"⚠️ Kein HbA1c — oben hinzufügen für genauen Score.",
+      err:"Serverfehler.",recalc:"Neu berechnen",
+      lbl_hba1c:"Aktueller HbA1c (%)",lbl_duree:"Diabetesdauer (Jahre)",
+      lbl_tension:"Syst. Blutdruck (mmHg)",
+      lbl_type:"Diabetes-Typ",lbl_sexe:"Geschlecht",lbl_rd:"Bekannte DR",
       male:"Männlich",female:"Weiblich",yes:"Ja",no:"Nein",dt1:"Typ 1",dt2:"Typ 2",
       next_fo:"Nächste Augenuntersuchung",months:"Monate",
-      hba1c_f:"HbA1c",duree_f:"Diabetesdauer",tension_f:"Blutdruck",
-      src:"Quelle: Aspelund et al. 2011 + Hermann et al. 2014"},
-    ro:{title:"Scor de risc retinian (RetinaRisk)",btn:"Calculează scorul",computing:"Calculare...",
+      tip_hba1c:"HbA1c spiegelt Ihren 3-Monats-Durchschnitt wider und ist der stärkste Prädiktor.",
+      tip_duree:"Längere Diabetesdauer erhöht das Retinopathierisiko.",
+      tip_tension:"Hypertonie verschlechtert die Retinopathie. Ziel: < 130/80 mmHg.",
+      tip_rd:"Bestehende Retinopathie erhöht das Progressionsrisiko erheblich.",
+      src:"Quelle: Aspelund et al. 2011 · Hermann et al. 2014",
+    },
+    ro:{
+      title:"Scor de risc retinian",subtitle:"RetinaRisk — Aspelund 2011",
+      btn:"Calculează riscul",computing:"Calculare...",
       low:"Scăzut",moderate:"Moderat",high:"Ridicat",
-      reco:"Recomandare",why:"De ce acest scor?",
-      disclaimer:"Bazat pe Aspelund et al. 2011 — instrument de sensibilizare.",
+      reco:"Recomandare",why:"Explicație",
+      disclaimer:"Bazat pe Aspelund et al. 2011. Instrument de sensibilizare.",
       nodata:"Adăugați cel puțin 3 măsurători.",
-      err:"Eroare server.",recalc:"↩ Recalculează",
-      lbl_hba1c:"HbA1c (%)",lbl_duree:"Durata diabetului (ani)",lbl_tension:"TA sistolică (mmHg)",
-      lbl_sexe:"Sex",lbl_rd:"DR diagnosticată",lbl_type:"Tip diabet",
+      noHba1c:"⚠️ Niciun HbA1c înregistrat — adăugați mai sus.",
+      err:"Eroare server.",recalc:"Recalculează",
+      lbl_hba1c:"HbA1c curent (%)",lbl_duree:"Durata diabetului (ani)",
+      lbl_tension:"TA sistolică (mmHg)",
+      lbl_type:"Tip diabet",lbl_sexe:"Sex",lbl_rd:"DR diagnosticată",
       male:"Masculin",female:"Feminin",yes:"Da",no:"Nu",dt1:"Tip 1",dt2:"Tip 2",
-      next_fo:"Următor fond de ochi recomandat",months:"luni",
-      hba1c_f:"HbA1c",duree_f:"Durată diabet",tension_f:"TA",
-      src:"Sursă: Aspelund et al. 2011 + Hermann et al. 2014"},
+      next_fo:"Următor FO recomandat",months:"luni",
+      tip_hba1c:"HbA1c reflectă glicemia medie pe 3 luni — cel mai puternic predictor.",
+      tip_duree:"Durata mai lungă a diabetului crește riscul de retinopatie.",
+      tip_tension:"Hipertensiunea agravează retinopatia. Țintă: < 130/80 mmHg.",
+      tip_rd:"Retinopatia existentă crește semnificativ riscul de progresie.",
+      src:"Sursă: Aspelund et al. 2011 · Hermann et al. 2014",
+    },
   };
   const i=L[lang]||L.fr;
 
@@ -885,65 +997,70 @@ function GlycemiaRiskScore({glycLogs,lang}){
         hba1c:parseFloat(form.hba1c)||7.5,
         duree_diabete:parseFloat(form.duree)||10,
         tension_sys:parseFloat(form.tension)||130,
-        sexe:form.sexe,
-        rd_presente:form.rd,
+        sexe:form.sexe,rd_presente:form.rd,
         type_diabete:form.type_diabete,
-        hba1c_history:[],
+        hba1c_history:hba1cHistory,
       };
       const r=await fetch(API+"/retinarisk",{
         method:"POST",headers:{"Content-Type":"application/json"},
         body:JSON.stringify(payload),
       });
       if(!r.ok) throw new Error("HTTP "+r.status);
-      const d=await r.json();
-      setResult(d);
+      setResult(await r.json());
     }catch(e){setErr(i.err);}
     finally{setLoading(false);}
   };
 
   const scoreColor=result?getRiskColor(result.risk_level):"#636366";
 
+  // Arc SVG — DA cohérente avec les anneaux de la home
   const ScoreArc=({score})=>{
-    const R=54,cx=64,cy=64;
-    const startA=Math.PI*0.75,endA=Math.PI*2.25,total=endA-startA;
+    const R=52,cx=64,cy=62;
+    const startA=Math.PI*0.75,total=Math.PI*1.5;
     const toXY=a=>({x:cx+R*Math.cos(a),y:cy+R*Math.sin(a)});
-    const bgS=toXY(startA),bgE=toXY(endA);
-    const fgA=startA+(score/100)*total;
+    const bgS=toXY(startA),bgE=toXY(startA+total);
+    const fgA=startA+(Math.min(score,100)/100)*total;
     const fgE=toXY(fgA);
     const large=fgA-startA>Math.PI?1:0;
     const col=score<35?"#30d158":score<65?"#ff9f0a":"#ff453a";
     const bgP=`M ${bgS.x} ${bgS.y} A ${R} ${R} 0 1 1 ${bgE.x} ${bgE.y}`;
     const fgP=`M ${toXY(startA).x} ${toXY(startA).y} A ${R} ${R} 0 ${large} 1 ${fgE.x} ${fgE.y}`;
     return(
-      <svg width="128" height="100" viewBox="0 0 128 100" style={{display:"block"}}>
-        <path d={bgP} fill="none" stroke="#2c2c2e" strokeWidth="11" strokeLinecap="round"/>
-        {score>0&&<path d={fgP} fill="none" stroke={col} strokeWidth="11" strokeLinecap="round"/>}
-        <text x={cx} y={cy-2} textAnchor="middle" fontSize="22" fontWeight="700" fill={col}>{score}</text>
-        <text x={cx} y={cy+14} textAnchor="middle" fontSize="9" fill="#636366">/100</text>
+      <svg width="128" height="104" viewBox="0 0 128 104">
+        <path d={bgP} fill="none" stroke="rgba(120,120,128,0.2)" strokeWidth="12" strokeLinecap="round"/>
+        {score>0&&<path d={fgP} fill="none" stroke={col} strokeWidth="12" strokeLinecap="round"/>}
+        <text x={cx} y={cx+2} textAnchor="middle" fontSize="24" fontWeight="700" fill={col} fontFamily="-apple-system,sans-serif">{score}</text>
+        <text x={cx} y={cx+17} textAnchor="middle" fontSize="10" fill="rgba(120,120,128,0.7)" fontFamily="-apple-system,sans-serif">/100</text>
       </svg>
     );
   };
 
-  const FField=({label,value,onChange,min,max,step})=>(
-    <div style={{marginBottom:14}}>
-      <div style={{color:t.text3,fontSize:11,fontWeight:600,marginBottom:5,letterSpacing:.4}}>{label}</div>
-      <input type="number" value={value} min={min} max={max} step={step||"0.1"}
-        inputMode="decimal"
+  // Champ de formulaire style appli
+  const F=({label,value,onChange,min,max,step,tip})=>(
+    <div style={{marginBottom:12}}>
+      <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:5}}>
+        <span style={{color:t.text3,fontSize:11,fontWeight:600,letterSpacing:.4,textTransform:"uppercase"}}>{label}</span>
+        {tip&&<button onClick={()=>setTooltip(tooltip===tip?null:tip)}
+          style={{background:"none",border:"none",color:t.text3,fontSize:13,cursor:"pointer",padding:"0 2px",lineHeight:1}}>ⓘ</button>}
+      </div>
+      {tooltip===tip&&<div style={{background:"#0a84ff15",border:"1px solid #0a84ff40",borderRadius:10,padding:"8px 10px",fontSize:12,color:t.text,lineHeight:1.5,marginBottom:8}}>{tip}</div>}
+      <input type="number" value={value} min={min} max={max} step={step||"0.1"} inputMode="decimal"
         onChange={e=>onChange(e.target.value)}
-        style={{width:"100%",padding:"9px 12px",borderRadius:10,border:"1px solid "+t.sep,
-          background:t.bg3,color:t.text,fontSize:15,fontFamily:t.sf,boxSizing:"border-box"}}/>
+        style={{width:"100%",padding:"10px 12px",borderRadius:12,border:`1px solid ${t.sep}`,
+          background:t.bg3,color:t.text,fontSize:15,fontFamily:t.sf,boxSizing:"border-box",
+          outline:"none"}}/>
     </div>
   );
 
-  const Toggle=({val,opts,onChange})=>(
-    <div style={{display:"flex",gap:6,marginBottom:14}}>
+  const Tog=({val,opts,onChange})=>(
+    <div style={{display:"flex",gap:6,marginBottom:12}}>
       {opts.map(([v,l])=>(
         <button key={v} onClick={()=>onChange(v)}
-          style={{flex:1,padding:"8px 4px",borderRadius:10,
-            border:"1px solid "+(val===v?"#0a84ff":t.sep),
-            background:val===v?"#0a84ff22":"transparent",
+          style={{flex:1,padding:"9px 6px",borderRadius:12,cursor:"pointer",
+            border:`1px solid ${val===v?"#0a84ff":t.sep}`,
+            background:val===v?"#0a84ff18":"transparent",
             color:val===v?"#0a84ff":t.text3,
-            fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:t.sf}}>
+            fontSize:13,fontWeight:600,fontFamily:t.sf,transition:"all .15s"}}>
           {l}
         </button>
       ))}
@@ -951,101 +1068,154 @@ function GlycemiaRiskScore({glycLogs,lang}){
   );
 
   return(
-    <div style={{marginTop:20,borderRadius:16,overflow:"hidden",border:"1px solid "+t.sep}}>
+    <div style={{marginTop:20,borderRadius:16,overflow:"hidden",border:`1px solid ${t.sep}`}}>
+      {/* Header accordion */}
       <button onClick={()=>setOpen(o=>!o)}
         style={{width:"100%",padding:"14px 16px",background:t.bg2,border:"none",cursor:"pointer",
           display:"flex",alignItems:"center",justifyContent:"space-between",fontFamily:t.sf}}>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <span style={{fontSize:20}}>🔬</span>
-          <span style={{color:t.text,fontSize:15,fontWeight:600}}>{i.title}</span>
+          <div style={{width:32,height:32,borderRadius:9,background:"linear-gradient(135deg,#0a84ff,#30d158)",
+            display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}>🔬</div>
+          <div style={{textAlign:"left"}}>
+            <div style={{color:t.text,fontSize:14,fontWeight:700,fontFamily:t.sf,lineHeight:1.2}}>{i.title}</div>
+            <div style={{color:t.text3,fontSize:11,fontFamily:t.sm}}>{i.subtitle}</div>
+          </div>
         </div>
-        <span style={{color:t.text3,fontSize:14,transform:open?"rotate(180deg)":"none",transition:"0.2s"}}>▼</span>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          {result&&<div style={{background:getRiskColor(result.risk_level)+"22",borderRadius:8,padding:"3px 8px"}}>
+            <span style={{color:getRiskColor(result.risk_level),fontSize:11,fontWeight:700}}>
+              {result.risk_level==="faible"||result.risk_level==="low"?i.low
+                :result.risk_level==="modéré"||result.risk_level==="moderate"?i.moderate:i.high}
+            </span>
+          </div>}
+          <span style={{color:t.text3,fontSize:12,transform:open?"rotate(180deg)":"none",transition:"0.2s"}}>▼</span>
+        </div>
       </button>
 
       {open&&(
-        <div style={{padding:"16px",background:t.bg2,borderTop:"1px solid "+t.sep}}>
+        <div style={{background:t.bg2,borderTop:`1px solid ${t.sep}`}}>
+
+          {/* Avertissement si pas d'HbA1c */}
+          {hba1cLogs.length===0&&(
+            <div style={{margin:"12px 16px 0",padding:"10px 12px",borderRadius:12,
+              background:"#ff9f0a18",border:"1px solid #ff9f0a40",
+              fontSize:12,color:"#ff9f0a",lineHeight:1.5}}>
+              {i.noHba1c}
+            </div>
+          )}
 
           {!result&&(
-            <>
-              {err&&<div style={{padding:"10px",borderRadius:10,background:"#ff453a22",color:"#ff453a",fontSize:13,marginBottom:12}}>{err}</div>}
+            <div style={{padding:16}}>
+              {err&&<div style={{padding:"10px",borderRadius:10,background:"#ff453a18",
+                border:"1px solid #ff453a30",color:"#ff453a",fontSize:13,marginBottom:12,lineHeight:1.4}}>{err}</div>}
 
-              <FField label={i.lbl_hba1c} value={form.hba1c} min={4} max={15} step="0.1"
-                onChange={v=>setForm(f=>({...f,hba1c:v}))}/>
-              <FField label={i.lbl_duree} value={form.duree} min={0} max={60} step="1"
-                onChange={v=>setForm(f=>({...f,duree:v}))}/>
-              <FField label={i.lbl_tension} value={form.tension} min={90} max={200} step="1"
-                onChange={v=>setForm(f=>({...f,tension:v}))}/>
+              <F label={i.lbl_hba1c} value={form.hba1c} min={4} max={15} step="0.1"
+                tip={i.tip_hba1c} onChange={v=>setForm(f=>({...f,hba1c:v}))}/>
+              <F label={i.lbl_duree} value={form.duree} min={0} max={60} step="1"
+                tip={i.tip_duree} onChange={v=>setForm(f=>({...f,duree:v}))}/>
+              <F label={i.lbl_tension} value={form.tension} min={90} max={200} step="1"
+                tip={i.tip_tension} onChange={v=>setForm(f=>({...f,tension:v}))}/>
 
-              <div style={{color:t.text3,fontSize:11,fontWeight:600,marginBottom:5,letterSpacing:.4}}>{i.lbl_type}</div>
-              <Toggle val={form.type_diabete} opts={[["DT1",i.dt1],["DT2",i.dt2]]}
+              <div style={{color:t.text3,fontSize:11,fontWeight:600,marginBottom:5,letterSpacing:.4,textTransform:"uppercase"}}>{i.lbl_type}</div>
+              <Tog val={form.type_diabete} opts={[["DT1",i.dt1],["DT2",i.dt2]]}
                 onChange={v=>setForm(f=>({...f,type_diabete:v}))}/>
 
-              <div style={{color:t.text3,fontSize:11,fontWeight:600,marginBottom:5,letterSpacing:.4}}>{i.lbl_sexe}</div>
-              <Toggle val={form.sexe} opts={[["M",i.male],["F",i.female]]}
+              <div style={{color:t.text3,fontSize:11,fontWeight:600,marginBottom:5,letterSpacing:.4,textTransform:"uppercase"}}>{i.lbl_sexe}</div>
+              <Tog val={form.sexe} opts={[["M",i.male],["F",i.female]]}
                 onChange={v=>setForm(f=>({...f,sexe:v}))}/>
 
-              <div style={{color:t.text3,fontSize:11,fontWeight:600,marginBottom:5,letterSpacing:.4}}>{i.lbl_rd}</div>
-              <Toggle val={String(form.rd)} opts={[["false",i.no],["true",i.yes]]}
-                onChange={v=>setForm(f=>({...f,rd:v==="true"}))}/>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+                <div>
+                  <div style={{color:t.text3,fontSize:11,fontWeight:600,letterSpacing:.4,textTransform:"uppercase"}}>{i.lbl_rd}</div>
+                  <div style={{color:t.text3,fontSize:11,marginTop:2}}>{i.tip_rd}</div>
+                </div>
+                <button onClick={()=>setForm(f=>({...f,rd:!f.rd}))}
+                  style={{width:48,height:28,borderRadius:14,border:"none",cursor:"pointer",
+                    background:form.rd?"#30d158":"rgba(120,120,128,0.3)",
+                    transition:"all .2s",position:"relative"}}>
+                  <div style={{width:22,height:22,borderRadius:11,background:"#fff",
+                    position:"absolute",top:3,left:form.rd?23:3,transition:"left .2s",
+                    boxShadow:"0 1px 3px rgba(0,0,0,0.2)"}}/>
+                </button>
+              </div>
 
               <button onClick={compute} disabled={loading}
-                style={{width:"100%",padding:"13px",background:loading?"#636366":"#0a84ff",
-                  border:"none",borderRadius:12,color:"#fff",fontSize:15,fontWeight:600,
-                  fontFamily:t.sf,cursor:loading?"not-allowed":"pointer",marginTop:4}}>
+                style={{width:"100%",padding:"14px",
+                  background:loading?"rgba(120,120,128,0.3)":"linear-gradient(135deg,#0a84ff,#30d158)",
+                  border:"none",borderRadius:14,color:"#fff",fontSize:15,fontWeight:700,
+                  fontFamily:t.sf,cursor:loading?"not-allowed":"pointer",letterSpacing:.3}}>
                 {loading?"⏳ "+i.computing:"🧮 "+i.btn}
               </button>
-            </>
+            </div>
           )}
 
           {result&&(
-            <div>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
-                <div>
-                  <div style={{color:t.text3,fontSize:11,marginBottom:8}}>{i.title}</div>
-                  <div style={{display:"inline-flex",alignItems:"center",background:scoreColor,
-                    color:"#fff",borderRadius:99,padding:"5px 14px",fontWeight:700,fontSize:14}}>
-                    {result.risk_level==="faible"||result.risk_level==="low"?i.low
-                      :result.risk_level==="modéré"||result.risk_level==="moderate"?i.moderate:i.high}
+            <div style={{padding:16}}>
+              {/* Arc + niveau + prochain FO */}
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+                <div style={{flex:1}}>
+                  <div style={{color:t.text3,fontSize:11,marginBottom:8,textTransform:"uppercase",letterSpacing:.5}}>{i.title}</div>
+                  <div style={{display:"inline-flex",alignItems:"center",gap:6,
+                    background:scoreColor+"22",border:`1px solid ${scoreColor}40`,
+                    borderRadius:20,padding:"6px 14px",marginBottom:10}}>
+                    <div style={{width:8,height:8,borderRadius:"50%",background:scoreColor}}/>
+                    <span style={{color:scoreColor,fontWeight:700,fontSize:15}}>
+                      {result.risk_level==="faible"||result.risk_level==="low"?i.low
+                        :result.risk_level==="modéré"||result.risk_level==="moderate"?i.moderate:i.high}
+                    </span>
                   </div>
-                  <div style={{marginTop:8,color:t.text3,fontSize:12}}>
-                    {i.next_fo} : <span style={{color:scoreColor,fontWeight:700}}>{result.next_screening_months} {i.months}</span>
+                  <div style={{color:t.text3,fontSize:12,display:"flex",alignItems:"center",gap:4}}>
+                    📅 {i.next_fo} :
+                    <span style={{color:scoreColor,fontWeight:700,marginLeft:3}}>
+                      {result.next_screening_months} {i.months}
+                    </span>
                   </div>
                 </div>
                 <ScoreArc score={result.score_pct}/>
               </div>
 
-              <div style={{background:t.bg3,borderRadius:10,padding:"10px 12px",marginBottom:10}}>
+              {/* Facteurs */}
+              <div style={{background:t.bg3,borderRadius:12,padding:"12px 14px",marginBottom:10,
+                border:`1px solid ${t.sep}`}}>
                 {[
-                  [i.hba1c_f, result.factors?.hba1c+" %"],
-                  [i.duree_f, result.factors?.duree_diabete+" ans"],
-                  [i.tension_f, result.factors?.tension_sys+" mmHg"],
-                ].map(([lbl,val])=>(
-                  <div key={lbl} style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:4}}>
-                    <span style={{color:t.text3}}>{lbl}</span>
-                    <span style={{color:t.text,fontWeight:600}}>{val}</span>
+                  ["🩸","HbA1c",result.factors?.hba1c+" %"],
+                  ["📅","Durée diabète",result.factors?.duree_diabete+" ans"],
+                  ["💓","Tension",result.factors?.tension_sys+" mmHg"],
+                ].map(([ico,lbl,val])=>(
+                  <div key={lbl} style={{display:"flex",justifyContent:"space-between",
+                    alignItems:"center",marginBottom:6}}>
+                    <span style={{color:t.text3,fontSize:12}}>{ico} {lbl}</span>
+                    <span style={{color:t.text,fontSize:13,fontWeight:600}}>{val}</span>
                   </div>
                 ))}
               </div>
 
-              <div style={{background:t.bg3,borderRadius:12,padding:"12px 14px",marginBottom:10}}>
-                <div style={{color:t.text3,fontSize:10,fontWeight:700,marginBottom:5,textTransform:"uppercase",letterSpacing:.5}}>📋 {i.reco}</div>
-                <div style={{color:t.text,fontSize:13,lineHeight:1.55}}>{result.recommendation}</div>
+              {/* Recommandation */}
+              <div style={{background:t.bg3,borderRadius:12,padding:"12px 14px",marginBottom:10,
+                border:`1px solid ${t.sep}`}}>
+                <div style={{color:t.text3,fontSize:10,fontWeight:700,marginBottom:6,
+                  textTransform:"uppercase",letterSpacing:.6}}>📋 {i.reco}</div>
+                <div style={{color:t.text,fontSize:13,lineHeight:1.6}}>{result.recommendation}</div>
               </div>
 
-              <div style={{background:t.bg3,borderRadius:12,padding:"12px 14px",marginBottom:12}}>
-                <div style={{color:t.text3,fontSize:10,fontWeight:700,marginBottom:5,textTransform:"uppercase",letterSpacing:.5}}>💡 {i.why}</div>
-                <div style={{color:t.text,fontSize:13,lineHeight:1.55}}>{result.explanation}</div>
+              {/* Explication */}
+              <div style={{background:t.bg3,borderRadius:12,padding:"12px 14px",marginBottom:12,
+                border:`1px solid ${t.sep}`}}>
+                <div style={{color:t.text3,fontSize:10,fontWeight:700,marginBottom:6,
+                  textTransform:"uppercase",letterSpacing:.6}}>💡 {i.why}</div>
+                <div style={{color:t.text,fontSize:13,lineHeight:1.6}}>{result.explanation}</div>
               </div>
 
-              <button onClick={()=>setResult(null)}
-                style={{width:"100%",padding:"9px",background:"transparent",border:"1px solid "+t.sep,
-                  borderRadius:10,color:t.text3,fontSize:13,cursor:"pointer",fontFamily:t.sf}}>
-                {i.recalc}
+              <button onClick={()=>{setResult(null);setTooltip(null);}}
+                style={{width:"100%",padding:"10px",background:"transparent",
+                  border:`1px solid ${t.sep}`,borderRadius:12,color:t.text3,
+                  fontSize:13,cursor:"pointer",fontFamily:t.sf}}>
+                ↩ {i.recalc}
               </button>
 
-              <div style={{marginTop:10,fontSize:10,color:t.text3,textAlign:"center",lineHeight:1.5}}>
-                ⚕️ {i.disclaimer}<br/>
-                <span style={{opacity:.6}}>{i.src}</span>
+              <div style={{marginTop:12,textAlign:"center",lineHeight:1.5}}>
+                <div style={{fontSize:10,color:t.text3}}>⚕️ {i.disclaimer}</div>
+                <div style={{fontSize:10,color:t.text4,marginTop:2,opacity:.7}}>{i.src}</div>
               </div>
             </div>
           )}
@@ -1655,6 +1825,7 @@ export default function App(){
   const [user,setUser]=useState(null);
   const [scans,setScans]=useState(()=>DB.get("guest_scans",[]));
   const [glycLogs,setGlycLogs]=useState(()=>DB.get("guest_glyc",[]));
+  const [hba1cLogs,setHba1cLogs]=useState(()=>DB.get("guest_hba1c",[]));
   const [authMode,setAuthMode]=useState("login");
   const [showAuth,setShowAuth]=useState(false);
   const [subScreen,setSubScreen]=useState(null);
@@ -1663,6 +1834,8 @@ export default function App(){
 
   useEffect(()=>{DB.set("guest_scans",scans);},[scans]);
   useEffect(()=>{DB.set("guest_glyc",glycLogs);},[glycLogs]);
+  useEffect(()=>{DB.set("guest_hba1c",hba1cLogs);},[hba1cLogs]);
+  const addHba1c=h=>{setHba1cLogs(p=>[...p,h]);};
 
   const login=u=>{setUser(u);setScreen("app");setShowAuth(false);};
   const logout=()=>{DB.del("sess");setUser(null);setScans([]);setGlycLogs([]);setScreen("landing");};
@@ -1686,13 +1859,13 @@ export default function App(){
 
   const renderMain=()=>{
     if(subScreen==="settings") return <SettingsScreen onBack={()=>setSubScreen(null)} darkMode={darkMode} setDarkMode={setDarkMode} onReset={resetAllData} lang={lang} setLang={setLang}/>;
-    if(subScreen==="glycemia") return <GlycemiaScreen glycLogs={glycLogs} onSave={g=>{addGlyc(g);}} onBack={()=>setSubScreen(null)}/>;
+    if(subScreen==="glycemia") return <GlycemiaScreen glycLogs={glycLogs} onSave={g=>{addGlyc(g);}} hba1cLogs={hba1cLogs} onSaveHba1c={h=>{addHba1c(h);}} onBack={()=>setSubScreen(null)} lang={lang}/>;
     if(subScreen==="vision") return <VisionScreen onBack={()=>setSubScreen(null)}/>;
     if(subScreen==="rdv") return <RDVScreen onBack={()=>setSubScreen(null)}/>;
     switch(tab){
       case"home": return <HomeScreen user={user} scans={scans} glycLogs={glycLogs} onNavigate={navigate} onGoGlyc={()=>setSubScreen("glycemia")} onGoVision={()=>setSubScreen("vision")} onGoRDV={()=>setSubScreen("rdv")} onGoScan={()=>switchTab("scan")}/>;
       case"scan": return <ScanScreen user={user} onDone={s=>{addScan(s);setSubScreen(null);}}/>;
-      case"history": return <HistoryScreen scans={scans} glycLogs={glycLogs} onScanDetail={s=>{setDetail(s);setTab("profile");}}/>;
+      case"history": return <HistoryScreen scans={scans} glycLogs={glycLogs} hba1cLogs={hba1cLogs} onScanDetail={s=>{setDetail(s);setTab("profile");}}/>;
       case"chat": return <ChatScreen/>;
       case"profile": return <ProfileScreen user={user} scans={scans} onDelete={delScan} onLogout={logout} onShowAuth={()=>{setAuthMode("register");setShowAuth(true);}} onUpdateConsent={updateConsent} detail={detail} setDetail={setDetail}/>;
       default: return null;
