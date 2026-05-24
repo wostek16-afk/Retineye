@@ -257,7 +257,7 @@ function TabBar({tab,set}){
 
 
 // ── HOME ──────────────────────────────────────────────────────
-function HomeScreen({user,scans,glycLogs,onNavigate,onGoGlyc,onGoVision,onGoRDV}){
+function HomeScreen({user,scans,glycLogs,onNavigate,onGoGlyc,onGoVision,onGoRDV,lastRisk,onGoRisk}){
   const t=useTheme();
   const now=new Date();
   const h=now.getHours();
@@ -356,6 +356,21 @@ function HomeScreen({user,scans,glycLogs,onNavigate,onGoGlyc,onGoVision,onGoRDV}
             <div style={{color:t.text4,fontSize:10,fontFamily:t.sm,marginTop:1}}>{sub}</div>
           </Card>
         ))}
+      {lastRisk&&<div onClick={onGoRisk} style={{background:lastRisk.risk_level==="faible"?"rgba(48,209,88,0.12)":lastRisk.risk_level==="modere"?"rgba(255,159,10,0.12)":"rgba(255,69,58,0.12)",borderRadius:18,padding:"14px 16px",marginTop:12,border:`1px solid ${lastRisk.risk_level==="faible"?"#30d158":lastRisk.risk_level==="modere"?"#ff9f0a":"#ff453a"}33`,cursor:"pointer"}} className="fade-up">
+        <div style={{color:lastRisk.risk_level==="faible"?"#30d158":lastRisk.risk_level==="modere"?"#ff9f0a":"#ff453a",fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:1,fontFamily:t.sm,marginBottom:7}}>RISQUE RÉTINOPATHIE</div>
+        <div style={{display:"flex",alignItems:"center",gap:11,marginBottom:8}}>
+          <span style={{fontSize:32}}>{lastRisk.risk_level==="faible"?"🟢":lastRisk.risk_level==="modere"?"🟡":"🔴"}</span>
+          <div style={{flex:1}}>
+            <div style={{color:t.text,fontSize:19,fontWeight:700,fontFamily:t.sf}}>{lastRisk.risk_level==="faible"?"Risque faible":lastRisk.risk_level==="modere"?"Risque modéré":"Risque élevé"}</div>
+            <div style={{color:t.text2,fontSize:12,fontFamily:t.sm}}>{lastRisk.score_pct}% · {lastRisk.next_screening_months} mois</div>
+          </div>
+          <div style={{textAlign:"right"}}>
+            <div style={{color:lastRisk.risk_level==="faible"?"#30d158":lastRisk.risk_level==="modere"?"#ff9f0a":"#ff453a",fontSize:22,fontWeight:700,fontFamily:t.sf}}>{lastRisk.risque_1an_pct}%</div>
+            <div style={{color:t.text3,fontSize:10,fontFamily:t.sm}}>risque 1 an</div>
+          </div>
+        </div>
+        <div style={{color:t.text2,fontSize:12,fontFamily:t.sm,lineHeight:1.5}}>{lastRisk.recommendation}</div>
+      </div>}
       </div>
       {!user&&<Card style={{marginTop:12,display:"flex",alignItems:"center",gap:12}}>
         <span style={{fontSize:22}}>👤</span>
@@ -500,7 +515,7 @@ function ScanScreen({user,onDone}){
     r.readAsDataURL(f);
   };
   const analyzeLocal=async()=>{
-    const resp=await fetch("http://localhost:8000/analyze",{
+    const resp=await fetch("/analyze",{
       method:"POST",headers:{"Content-Type":"application/json"},
       body:JSON.stringify({image:b64}),
       signal:AbortSignal.timeout(8000),
@@ -1265,6 +1280,64 @@ function ConsentScreen({onAccept,onDecline}){
 
 
 // ── APP ROOT ──────────────────────────────────────────────────
+function RiskScreen({onBack,onResult}){
+  const t=useTheme();
+  const [form,setForm]=useState({hba1c:"7.6",duree:"10",tension:"130",type:"DT2",sexe:"F",rd:false});
+  const [res,setRes]=useState(null);
+  const [loading,setLoading]=useState(false);
+  const [err,setErr]=useState(null);
+  const BASE="";
+  const compute=async()=>{
+    setLoading(true);setErr(null);
+    try{
+      const r=await fetch(BASE+"/retinarisk",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({hba1c:parseFloat(form.hba1c)||7.6,duree_diabete:parseFloat(form.duree)||10,tension_sys:parseFloat(form.tension)||130,sexe:form.sexe,rd_presente:form.rd,type_diabete:form.type,hba1c_history:[parseFloat(form.hba1c)||7.6]})});
+      if(!r.ok) throw new Error("HTTP "+r.status);
+      const d=await r.json();setRes(d);if(onResult)onResult(d);
+    }catch(e){setErr("Erreur serveur — vérifiez votre connexion.");}
+    finally{setLoading(false);}
+  };
+  const rc=res?res.risk_level==="faible"?"#30d158":res.risk_level==="modere"?"#ff9f0a":"#ff453a":null;
+  return(
+    <div style={{padding:"0 16px",paddingBottom:140,minHeight:"100%"}}>
+      <div style={{paddingTop:56}}><BackBtn onBack={onBack} label="Retour"/></div>
+      <div style={{color:t.text,fontSize:22,fontWeight:700,fontFamily:t.sf,marginBottom:4}}>Score de risque</div>
+      <div style={{color:t.text3,fontSize:13,fontFamily:t.sm,marginBottom:20}}>Rétinopathie diabétique — Aspelund 2011</div>
+      <Card style={{marginBottom:12}}>
+        {[["HbA1c actuelle (%)","hba1c","7.6","decimal"],["Durée du diabète (ans)","duree","10","numeric"],["Tension systolique (mmHg)","tension","130","numeric"]].map(([lbl,key,ph,mode])=>(
+          <div key={key} style={{marginBottom:10}}>
+            <div style={{color:t.text3,fontSize:11,fontWeight:600,textTransform:"uppercase",letterSpacing:.6,marginBottom:5,fontFamily:t.sm}}>{lbl}</div>
+            <input value={form[key]} onChange={e=>setForm(p=>({...p,[key]:e.target.value}))} placeholder={ph} inputMode={mode} style={{width:"100%",background:t.bg3,border:`1px solid ${t.bg4}`,borderRadius:12,padding:"12px 14px",color:t.text,fontSize:15,fontFamily:t.sm,outline:"none"}}/>
+          </div>
+        ))}
+        <div style={{marginBottom:10}}>
+          <div style={{color:t.text3,fontSize:11,fontWeight:600,textTransform:"uppercase",letterSpacing:.6,marginBottom:5,fontFamily:t.sm}}>Type de diabète</div>
+          <div style={{display:"flex",gap:8}}>{["DT1","DT2"].map(v=><button key={v} onClick={()=>setForm(p=>({...p,type:v}))} style={{flex:1,padding:"10px",borderRadius:12,border:`1.5px solid ${form.type===v?t.glassBorder:t.bg4}`,background:form.type===v?t.glass:"transparent",color:form.type===v?t.text:t.text3,fontWeight:600,fontFamily:t.sm,cursor:"pointer"}}>{v==="DT1"?"Type 1":"Type 2"}</button>)}</div>
+        </div>
+        <div style={{marginBottom:10}}>
+          <div style={{color:t.text3,fontSize:11,fontWeight:600,textTransform:"uppercase",letterSpacing:.6,marginBottom:5,fontFamily:t.sm}}>Sexe</div>
+          <div style={{display:"flex",gap:8}}>{[["M","Homme"],["F","Femme"]].map(([v,lbl])=><button key={v} onClick={()=>setForm(p=>({...p,sexe:v}))} style={{flex:1,padding:"10px",borderRadius:12,border:`1.5px solid ${form.sexe===v?t.glassBorder:t.bg4}`,background:form.sexe===v?t.glass:"transparent",color:form.sexe===v?t.text:t.text3,fontWeight:600,fontFamily:t.sm,cursor:"pointer"}}>{lbl}</button>)}</div>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:4}}>
+          <input type="checkbox" checked={form.rd} onChange={e=>setForm(p=>({...p,rd:e.target.checked}))} id="rd_cb" style={{width:18,height:18}}/>
+          <label htmlFor="rd_cb" style={{color:t.text2,fontSize:13,fontFamily:t.sm,cursor:"pointer"}}>Rétinopathie déjà diagnostiquée</label>
+        </div>
+      </Card>
+      {err&&<div style={{color:"#ff453a",fontSize:13,fontFamily:t.sm,marginBottom:12}}>{err}</div>}
+      <button onClick={compute} disabled={loading} style={{width:"100%",padding:"15px",borderRadius:14,background:loading?"#555":"#0a84ff",color:"#fff",fontSize:16,fontWeight:700,fontFamily:t.sm,border:"none",cursor:loading?"default":"pointer",marginBottom:16}}>{loading?"⏳ Calcul...":"🧮 Calculer mon risque"}</button>
+      {res&&rc&&<div style={{background:rc+"1a",borderRadius:18,padding:"16px",border:`1px solid ${rc}33`}}>
+        <div style={{color:rc,fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:1,fontFamily:t.sm,marginBottom:8}}>RÉSULTAT</div>
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
+          <span style={{fontSize:36}}>{res.risk_level==="faible"?"🟢":res.risk_level==="modere"?"🟡":"🔴"}</span>
+          <div><div style={{color:t.text,fontSize:22,fontWeight:700,fontFamily:t.sf}}>{res.risk_level==="faible"?"Risque faible":res.risk_level==="modere"?"Risque modéré":"Risque élevé"}</div>
+          <div style={{color:t.text2,fontSize:13,fontFamily:t.sm}}>{res.score_pct}% · risque 1 an : {res.risque_1an_pct}%</div></div>
+        </div>
+        <div style={{color:t.text2,fontSize:13,fontFamily:t.sm,lineHeight:1.55,marginBottom:8}}>{res.recommendation}</div>
+        <div style={{color:t.text3,fontSize:11,fontFamily:t.sm}}>Prochain contrôle : {res.next_screening_months} mois</div>
+      </div>}
+    </div>
+  );
+}
+
 export default function App(){
   const [darkMode,setDarkMode]=useState(true); // default dark, like Apple Activity
   const t=darkMode?DARK:LIGHT;
@@ -1273,6 +1346,7 @@ export default function App(){
   const [tab,setTab]=useState("home");
   const [user,setUser]=useState(null);
   const [scans,setScans]=useState(()=>DB.get("guest_scans",[]));
+  const [lastRisk,setLastRisk]=useState(()=>DB.get("last_risk",null));
   const [glycLogs,setGlycLogs]=useState(()=>DB.get("guest_glyc",[]));
   const [authMode,setAuthMode]=useState("login");
   const [showAuth,setShowAuth]=useState(false);
@@ -1332,11 +1406,12 @@ export default function App(){
 
   const renderMain=()=>{
     if(subScreen==="settings") return <SettingsScreen onBack={()=>setSubScreen(null)} darkMode={darkMode} setDarkMode={setDarkMode}/>;
+    if(subScreen==="risk") return <RiskScreen onBack={()=>setSubScreen(null)} onResult={d=>{setLastRisk(d);DB.set("last_risk",d);}}/>;
     if(subScreen==="glycemia") return <GlycemiaScreen glycLogs={glycLogs} onSave={g=>{addGlyc(g);}} onBack={()=>setSubScreen(null)}/>;
     if(subScreen==="vision") return <VisionScreen onBack={()=>setSubScreen(null)}/>;
     if(subScreen==="rdv") return <RDVScreen onBack={()=>setSubScreen(null)}/>;
     switch(tab){
-      case"home": return <HomeScreen user={user} scans={scans} glycLogs={glycLogs} onNavigate={navigate} onGoGlyc={()=>setSubScreen("glycemia")} onGoVision={()=>setSubScreen("vision")} onGoRDV={()=>setSubScreen("rdv")}/>;
+      case"home": return <HomeScreen user={user} scans={scans} glycLogs={glycLogs} onNavigate={navigate} onGoGlyc={()=>setSubScreen("glycemia")} onGoVision={()=>setSubScreen("vision")} onGoRDV={()=>setSubScreen("rdv")} lastRisk={lastRisk} onGoRisk={()=>setSubScreen("risk")}/>;
       case"scan": return <ScanScreen user={user} onDone={s=>{addScan(s);setSubScreen(null);}}/>;
       case"history": return <HistoryScreen scans={scans} glycLogs={glycLogs} onScanDetail={s=>{setDetail(s);setTab("profile");}}/>;
       case"chat": return <ChatScreen/>;
