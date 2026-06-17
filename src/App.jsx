@@ -371,6 +371,7 @@ function HomeScreen({user,scans,glycLogs,onNavigate,onGoGlyc,onGoVision,onGoRDV,
         </div>
         <div style={{color:t.text2,fontSize:12,fontFamily:t.sm,lineHeight:1.5}}>{lastRisk.recommendation}</div>
       </div>}
+      {!lastRisk&&<Card onClick={onGoRisk} style={{marginTop:12,cursor:"pointer"}} className="fade-up-2"><div style={{display:"flex",alignItems:"center",gap:12}}><span style={{fontSize:28}}>🔬</span><div><div style={{color:t.text,fontSize:15,fontWeight:700,fontFamily:t.sf}}>Score de risque rétinien</div><div style={{color:t.text3,fontSize:12,fontFamily:t.sm}}>Calculez votre risque (HbA1c, tension, durée du diabète)</div></div></div></Card>}
       </div>
       {!user&&<Card style={{marginTop:12,display:"flex",alignItems:"center",gap:12}}>
         <span style={{fontSize:22}}>👤</span>
@@ -1286,7 +1287,7 @@ function RiskScreen({onBack,onResult}){
   const [res,setRes]=useState(null);
   const [loading,setLoading]=useState(false);
   const [err,setErr]=useState(null);
-  const BASE="";
+  const BASE="https://wostek162-retineye.hf.space";
   const compute=async()=>{
     setLoading(true);setErr(null);
     try{
